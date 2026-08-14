@@ -7,6 +7,7 @@ using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using System.Windows.Forms.VisualStyles;
@@ -31,6 +32,7 @@ namespace DynamicWin.UI.UIElements.Custom
         public static TrayFile lastSelected;
 
         Tray tray;
+        private CancellationTokenSource thumbnailCancellation = new();
 
         public TrayFile(UIObject? parent, string file, Vec2 position, Tray tray, UIAlignment alignment = UIAlignment.TopCenter):
             base(parent, position, new Vec2(60, 75), alignment)
@@ -78,55 +80,57 @@ namespace DynamicWin.UI.UIElements.Custom
             RefreshIcon();
         }
 
-        public void RefreshIcon()
+        public async void RefreshIcon()
         {
-            new Thread(() =>
-            {
-                Thread.CurrentThread.IsBackground = true;
+            thumbnailCancellation.Cancel();
+            thumbnailCancellation.Dispose();
+            thumbnailCancellation = new CancellationTokenSource();
+            var cancellationToken = thumbnailCancellation.Token;
 
+            for (var attempt = 0; attempt < 3 && !cancellationToken.IsCancellationRequested; attempt++)
+            {
                 try
                 {
-                    int THUMB_SIZE = 64;
-                    thumbnail = DynamicWin.Platform.PlatformAdapters.Current.FileThumbnails.GetThumbnail(
-                       file, THUMB_SIZE, THUMB_SIZE, ThumbnailOptions.None);
+                    const int thumbnailSize = 64;
+                    using var loadedThumbnail = await Task.Run(
+                        () => DynamicWin.Platform.PlatformAdapters.Current.FileThumbnails.GetThumbnail(
+                            file, thumbnailSize, thumbnailSize, ThumbnailOptions.None),
+                        cancellationToken);
+                    var bitmap = loadedThumbnail.ToSKBitmap();
+                    await System.Windows.Application.Current.Dispatcher.InvokeAsync(() =>
+                    {
+                        fileIconImage.Image = bitmap;
+                        SetActive(true);
+                    });
+                    return;
                 }
-                catch (System.Runtime.InteropServices.COMException e)
+                catch (System.Runtime.InteropServices.COMException)
                 {
                     System.Diagnostics.Debug.WriteLine("Could not load icon.");
-
-                    new Thread(() =>
-                    {
-                        try
-                        {
-                            Thread.Sleep(1500);
-                        }
-                        catch (ThreadInterruptedException e)
-                        {
-                            return;
-                        }
-
-                        RefreshIcon();
-                    }).Start();
-
+                    await Task.Delay(TimeSpan.FromSeconds(1.5), cancellationToken);
                 }
-                catch (FileNotFoundException fnfE)
+                catch (FileNotFoundException)
                 {
                     return;
                 }
-                finally
+                catch (OperationCanceledException)
                 {
-                    SKBitmap bMap = null;
-                    if (thumbnail != null) bMap = thumbnail.ToSKBitmap();
-                    else bMap = Resources.Res.FileIcon;
-
-                    fileIconImage.Image = bMap;
-
-                    if (thumbnail != null)
-                        thumbnail.Dispose();
+                    return;
                 }
+            }
 
+            await System.Windows.Application.Current.Dispatcher.InvokeAsync(() =>
+            {
+                fileIconImage.Image = Resources.Res.FileIcon;
                 SetActive(true);
-            }).Start();
+            });
+        }
+
+        public override void OnDestroy()
+        {
+            thumbnailCancellation.Cancel();
+            thumbnailCancellation.Dispose();
+            base.OnDestroy();
         }
 
         float cycle = 0f;
