@@ -196,7 +196,7 @@ namespace DynamicWin.UI.Widgets.Big
                 try
                 {
                     int THUMB_SIZE = 24;
-                    thumbnail = WindowsThumbnailProvider.GetThumbnail(
+                    thumbnail = DynamicWin.Platform.PlatformAdapters.Current.FileThumbnails.GetThumbnail(
                        savedShortcut.path, THUMB_SIZE, THUMB_SIZE, ThumbnailOptions.None);
                 }
                 catch (System.Runtime.InteropServices.COMException e)

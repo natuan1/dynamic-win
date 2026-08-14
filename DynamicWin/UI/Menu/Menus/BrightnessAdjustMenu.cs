@@ -64,7 +64,7 @@ namespace DynamicWin.UI.Menu.Menus
 
             timerUntilClose += RendererMain.Instance.DeltaTime;
 
-            this.brightness.value = (float)WindowsSettingsBrightnessController.Get() / 100f;
+            this.brightness.value = (float)DynamicWin.Platform.PlatformAdapters.Current.Brightness.Get() / 100f;
 
             var volXOffset = KeyHandler.keyDown.Contains(System.Windows.Forms.Keys.VolumeUp) ? 2f :
                 KeyHandler.keyDown.Contains(System.Windows.Forms.Keys.VolumeDown) ? -2f : 0;
@@ -85,7 +85,7 @@ namespace DynamicWin.UI.Menu.Menus
 
         internal static int GetBrightness()
         {
-            return WindowsSettingsBrightnessController.Get();
+            return DynamicWin.Platform.PlatformAdapters.Current.Brightness.Get();
         }
 
         public override Col IslandBorderColor()
@@ -94,52 +94,4 @@ namespace DynamicWin.UI.Menu.Menus
         }
     }
 
-    static class WindowsSettingsBrightnessController
-    {
-        static bool notSupported = false;
-
-        public static int Get()
-        {
-            if(notSupported)
-                return 100;
-
-            try
-            {
-                using var mclass = new ManagementClass("WmiMonitorBrightness")
-                {
-                    Scope = new ManagementScope(@"\\.\root\wmi")
-                };
-                using var instances = mclass.GetInstances();
-                foreach (ManagementObject instance in instances)
-                {
-                    return (byte)instance.GetPropertyValue("CurrentBrightness");
-                }
-                return 0;
-            }catch(System.Management.ManagementException e)
-            {
-                notSupported = true;
-                return 100;
-            }
-        }
-
-        public static void Set(int brightness)
-        {
-            try
-            {
-                using var mclass = new ManagementClass("WmiMonitorBrightnessMethods")
-                {
-                    Scope = new ManagementScope(@"\\.\root\wmi")
-                };
-                using var instances = mclass.GetInstances();
-                var args = new object[] { 1, brightness };
-                foreach (ManagementObject instance in instances)
-                {
-                    instance.InvokeMethod("WmiSetBrightness", args);
-                }
-            }catch(Exception e)
-            {
-                Console.WriteLine(e.ToString());
-            }
-        }
-    }
 }

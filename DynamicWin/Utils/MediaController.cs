@@ -5,7 +5,7 @@ using System.Windows.Forms;
 
 namespace DynamicWin.Utils
 {
-    public class MediaController
+    public class MediaController : DynamicWin.Platform.IMediaTransport
     {
         [DllImport("user32.dll")]
         private static extern void keybd_event(byte bVk, byte bScan, uint dwFlags, int dwExtraInfo);

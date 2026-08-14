@@ -24,7 +24,7 @@ namespace DynamicWin.UI.Widgets.Big
 
     public class MediaWidget : WidgetBase
     {
-        MediaController controller;
+        DynamicWin.Platform.IMediaTransport controller;
         AudioVisualizer audioVisualizer;
         AudioVisualizer audioVisualizerBig;
 
@@ -42,8 +42,9 @@ namespace DynamicWin.UI.Widgets.Big
             return base.GetWidgetWidth() * 2f;
         }*/
 
-        public MediaWidget(UIObject? parent, Vec2 position, UIAlignment alignment = UIAlignment.TopCenter) : base(parent, position, alignment)
+        public MediaWidget(UIObject? parent, Vec2 position, UIAlignment alignment = UIAlignment.TopCenter, DynamicWin.Platform.IMediaTransport? mediaTransport = null) : base(parent, position, alignment)
         {
+            controller = mediaTransport ?? DynamicWin.Platform.PlatformAdapters.Current.Media;
             InitMediaPlayer();
 
             playPause = new DWImageButton(this, Resources.Res.PlayPause, new Vec2(0, 25), new Vec2(30, 30), () =>
@@ -192,7 +193,6 @@ namespace DynamicWin.UI.Widgets.Big
 
         private void InitMediaPlayer()
         {
-            controller = new MediaController();
         }
 
         float spotifyBlur = 0f;

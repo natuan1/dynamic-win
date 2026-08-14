@@ -31,11 +31,11 @@ namespace DynamicWin
             {
                 if (Settings.RunOnStartup)
                 {
-                    StartupShortcutManager.CreateShortcut();
+                    DynamicWin.Platform.PlatformAdapters.Current.StartupShortcuts.CreateShortcut();
                 }
                 else
                 {
-                    StartupShortcutManager.RemoveShortcut();
+                    DynamicWin.Platform.PlatformAdapters.Current.StartupShortcuts.RemoveShortcut();
                 }
             }
             catch (Exception ex)
