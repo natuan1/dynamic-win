@@ -204,19 +204,10 @@ namespace DynamicWin.Main
                 canvas.RestoreToCount(canvasWithoutClip);
                 canvasWithoutClip = canvas.Save();
 
-                if (uiObject.IsHovering && uiObject.GetContextMenu() != null)
+                if (uiObject.TryGetHoveredContextMenu(out var contextMenu))
                 {
                     hasContextMenu = true;
-                    ContextMenu = uiObject.GetContextMenu();
-                }
-
-                foreach (UIObject obj in uiObject.LocalObjects)
-                {
-                    if (obj.IsHovering && obj.GetContextMenu() != null)
-                    {
-                        hasContextMenu = true;
-                        ContextMenu = obj.GetContextMenu();
-                    }
+                    ContextMenu = contextMenu;
                 }
 
                 if (uiObject.maskInToIsland)
