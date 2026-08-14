@@ -49,8 +49,7 @@ namespace DynamicWin.UI
         public float roundRadius = 0f;
         public bool maskInToIsland = true;
 
-        private List<UIObject> localObjects = new List<UIObject>();
-        public List<UIObject> LocalObjects { get => localObjects; }
+        private readonly List<UIObject> localObjects = new();
 
         private bool isEnabled = true;
         public bool IsEnabled { get => isEnabled; set => SetActive(value); }
@@ -104,155 +103,16 @@ namespace DynamicWin.UI
             if (Size == null) Size = this.Size;
             if (alignment == UIAlignment.None) alignment = this.alignment;
 
-            if (parent == null)
-            {
-                Vec2 screenDim = RendererMain.ScreenDimensions;
-                if (Size == null) Size = Vec2.one;
-                switch (alignment)
-                {
-                    case UIAlignment.TopLeft:
-                        return new Vec2(position.X - (Size.X * Anchor.X),
-                            position.Y - (Size.Y * Anchor.Y));
-                    case UIAlignment.TopCenter:
-                        return new Vec2(position.X + screenDim.X / 2 - (Size.X * Anchor.X),
-                            position.Y - (Size.Y * Anchor.Y));
-                    case UIAlignment.TopRight:
-                        return new Vec2(position.X + screenDim.X - (Size.X * Anchor.X),
-                            position.Y - (Size.Y * Anchor.Y));
-                    case UIAlignment.MiddleLeft:
-                        return new Vec2(position.X - (Size.X * Anchor.X),
-                            position.Y + screenDim.Y / 2 - (Size.Y * Anchor.Y));
-                    case UIAlignment.Center:
-                        return new Vec2(position.X + screenDim.X / 2 - (Size.X * Anchor.X),
-                            position.Y + screenDim.Y / 2 - (Size.Y * Anchor.Y));
-                    case UIAlignment.MiddleRight:
-                        return new Vec2(position.X + screenDim.X - (Size.X * Anchor.X),
-                            position.Y + screenDim.Y / 2 - (Size.Y * Anchor.Y));
-                    case UIAlignment.BottomLeft:
-                        return new Vec2(position.X - (Size.X * Anchor.X),
-                            position.Y + screenDim.Y - (Size.Y * Anchor.Y));
-                    case UIAlignment.BottomCenter:
-                        return new Vec2(position.X + screenDim.X / 2 - (Size.X * Anchor.X),
-                            position.Y + screenDim.Y - (Size.Y * Anchor.Y));
-                    case UIAlignment.BottomRight:
-                        return new Vec2(position.X + screenDim.X - (Size.X * Anchor.X),
-                            position.Y + screenDim.Y - (Size.Y * Anchor.Y));
-                }
-            }
-            else
-            {
-                Vec2 parentDim = parent.Size;
-                Vec2 parentPos = parent.Position;
-
-                switch (alignment)
-                {
-                    case UIAlignment.TopLeft:
-                        return new Vec2(parentPos.X + position.X - (Size.X * Anchor.X),
-                            parentPos.Y + position.Y - (Size.Y * Anchor.Y));
-                    case UIAlignment.TopCenter:
-                        return new Vec2(parentPos.X + position.X + parentDim.X / 2 - (Size.X * Anchor.X),
-                            parentPos.Y + position.Y - (Size.Y * Anchor.Y));
-                    case UIAlignment.TopRight:
-                        return new Vec2(parentPos.X + position.X + parentDim.X - (Size.X * Anchor.X),
-                            parentPos.Y + position.Y - (Size.Y * Anchor.Y));
-                    case UIAlignment.MiddleLeft:
-                        return new Vec2(parentPos.X + position.X - (Size.X * Anchor.X),
-                            parentPos.Y + position.Y + parentDim.Y / 2 - (Size.Y * Anchor.Y));
-                    case UIAlignment.Center:
-                        return new Vec2(parentPos.X + position.X + parentDim.X / 2 - (Size.X * Anchor.X),
-                            parentPos.Y + position.Y + parentDim.Y / 2 - (Size.Y * Anchor.Y));
-                    case UIAlignment.MiddleRight:
-                        return new Vec2(parentPos.X + position.X + parentDim.X - (Size.X * Anchor.X),
-                            parentPos.Y + position.Y + parentDim.Y / 2 - (Size.Y * Anchor.Y));
-                    case UIAlignment.BottomLeft:
-                        return new Vec2(parentPos.X + position.X - (Size.X * Anchor.X),
-                            parentPos.Y + position.Y + parentDim.Y - (Size.Y * Anchor.Y));
-                    case UIAlignment.BottomCenter:
-                        return new Vec2(parentPos.X + position.X + parentDim.X / 2 - (Size.X * Anchor.X),
-                            parentPos.Y + position.Y + parentDim.Y - (Size.Y * Anchor.Y));
-                    case UIAlignment.BottomRight:
-                        return new Vec2(parentPos.X + position.X + parentDim.X - (Size.X * Anchor.X),
-                            parentPos.Y + position.Y + parentDim.Y - (Size.Y * Anchor.Y));
-                }
-            }
-
-            return Vec2.zero;
+            var containerPosition = parent?.Position ?? Vec2.zero;
+            var containerSize = parent?.Size ?? RendererMain.ScreenDimensions;
+            return UiLayout.ResolvePosition(position, Size, Anchor, alignment, containerPosition, containerSize);
         }
 
         protected virtual Vec2 GetPosition()
         {
-            if(parent == null)
-            {
-                Vec2 screenDim = RendererMain.ScreenDimensions;
-                switch (alignment)
-                {
-                    case UIAlignment.TopLeft:
-                        return new Vec2(position.X - (Size.X * Anchor.X),
-                            position.Y - (Size.Y * Anchor.Y));
-                    case UIAlignment.TopCenter:
-                        return new Vec2(position.X + screenDim.X / 2 - (Size.X * Anchor.X),
-                            position.Y - (Size.Y * Anchor.Y));
-                    case UIAlignment.TopRight:
-                        return new Vec2(position.X + screenDim.X - (Size.X * Anchor.X),
-                            position.Y - (Size.Y * Anchor.Y));
-                    case UIAlignment.MiddleLeft:
-                        return new Vec2(position.X - (Size.X * Anchor.X),
-                            position.Y + screenDim.Y / 2 - (Size.Y * Anchor.Y));
-                    case UIAlignment.Center:
-                        return new Vec2(position.X + screenDim.X / 2 - (Size.X * Anchor.X),
-                            position.Y + screenDim.Y / 2 - (Size.Y * Anchor.Y));
-                    case UIAlignment.MiddleRight:
-                        return new Vec2(position.X + screenDim.X - (Size.X * Anchor.X),
-                            position.Y + screenDim.Y / 2 - (Size.Y * Anchor.Y));
-                    case UIAlignment.BottomLeft:
-                        return new Vec2(position.X - (Size.X * Anchor.X),
-                            position.Y + screenDim.Y - (Size.Y * Anchor.Y));
-                    case UIAlignment.BottomCenter:
-                        return new Vec2(position.X + screenDim.X / 2 - (Size.X * Anchor.X),
-                            position.Y + screenDim.Y - (Size.Y * Anchor.Y));
-                    case UIAlignment.BottomRight:
-                        return new Vec2(position.X + screenDim.X - (Size.X * Anchor.X),
-                            position.Y + screenDim.Y - (Size.Y * Anchor.Y));
-                }
-            }
-            else
-            {
-                Vec2 parentDim = parent.Size;
-                Vec2 parentPos = parent.Position;
-
-                switch (alignment)
-                {
-                    case UIAlignment.TopLeft:
-                        return new Vec2(parentPos.X + position.X - (Size.X * Anchor.X),
-                            parentPos.Y + position.Y - (Size.Y * Anchor.Y));
-                    case UIAlignment.TopCenter:
-                        return new Vec2(parentPos.X + position.X + parentDim.X / 2 - (Size.X * Anchor.X),
-                            parentPos.Y + position.Y - (Size.Y * Anchor.Y));
-                    case UIAlignment.TopRight:
-                        return new Vec2(parentPos.X + position.X + parentDim.X - (Size.X * Anchor.X),
-                            parentPos.Y + position.Y - (Size.Y * Anchor.Y));
-                    case UIAlignment.MiddleLeft:
-                        return new Vec2(parentPos.X + position.X - (Size.X * Anchor.X),
-                            parentPos.Y + position.Y + parentDim.Y / 2 - (Size.Y * Anchor.Y));
-                    case UIAlignment.Center:
-                        return new Vec2(parentPos.X + position.X + parentDim.X / 2 - (Size.X * Anchor.X),
-                            parentPos.Y + position.Y + parentDim.Y / 2 - (Size.Y * Anchor.Y));
-                    case UIAlignment.MiddleRight:
-                        return new Vec2(parentPos.X + position.X + parentDim.X - (Size.X * Anchor.X),
-                            parentPos.Y + position.Y + parentDim.Y / 2 - (Size.Y * Anchor.Y));
-                    case UIAlignment.BottomLeft:
-                        return new Vec2(parentPos.X + position.X - (Size.X * Anchor.X),
-                            parentPos.Y + position.Y + parentDim.Y - (Size.Y * Anchor.Y));
-                    case UIAlignment.BottomCenter:
-                        return new Vec2(parentPos.X + position.X + parentDim.X / 2 - (Size.X * Anchor.X),
-                            parentPos.Y + position.Y + parentDim.Y - (Size.Y * Anchor.Y));
-                    case UIAlignment.BottomRight:
-                        return new Vec2(parentPos.X + position.X + parentDim.X - (Size.X * Anchor.X),
-                            parentPos.Y + position.Y + parentDim.Y - (Size.Y * Anchor.Y));
-                }
-            }
-
-            return Vec2.zero;
+            var containerPosition = parent?.Position ?? Vec2.zero;
+            var containerSize = parent?.Size ?? RendererMain.ScreenDimensions;
+            return UiLayout.ResolvePosition(position, Size, Anchor, alignment, containerPosition, containerSize);
         }
 
         public float GetBlur()
@@ -461,6 +321,27 @@ namespace DynamicWin.UI
 
         public virtual ContextMenu? CreateContextMenu() { return null; }
         public virtual ContextMenu? GetContextMenu() { return contextMenu; }
+
+        public bool TryGetHoveredContextMenu(out ContextMenu? menu)
+        {
+            if (IsHovering && contextMenu != null)
+            {
+                menu = contextMenu;
+                return true;
+            }
+
+            foreach (var localObject in localObjects)
+            {
+                if (localObject.IsHovering && localObject.GetContextMenu() != null)
+                {
+                    menu = localObject.GetContextMenu();
+                    return true;
+                }
+            }
+
+            menu = null;
+            return false;
+        }
     }
 
     public enum UIAlignment
