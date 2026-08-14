@@ -185,57 +185,38 @@ namespace DynamicWin.UI.Widgets.Big
             }
         }
 
-        Bitmap thumbnail;
-        
-        void UpdateDisplay()
+        async void UpdateDisplay()
         {
             shortcutTitle.SilentSetText(DWText.Truncate(string.IsNullOrEmpty(savedShortcut.name) ? " " : savedShortcut.name, 9));
 
-            Task.Run(() =>
+            for (var attempt = 0; attempt < 3; attempt++)
             {
                 try
                 {
-                    int THUMB_SIZE = 24;
-                    thumbnail = DynamicWin.Platform.PlatformAdapters.Current.FileThumbnails.GetThumbnail(
-                       savedShortcut.path, THUMB_SIZE, THUMB_SIZE, ThumbnailOptions.None);
+                    const int thumbnailSize = 24;
+                    using var thumbnail = await Task.Run(() => DynamicWin.Platform.PlatformAdapters.Current.FileThumbnails.GetThumbnail(
+                        savedShortcut.path, thumbnailSize, thumbnailSize, ThumbnailOptions.None));
+                    var bitmap = thumbnail.ToSKBitmap();
+                    await System.Windows.Application.Current.Dispatcher.InvokeAsync(() =>
+                    {
+                        shortcutIcon.Image = bitmap;
+                        SetActive(true);
+                    });
+                    return;
                 }
-                catch (System.Runtime.InteropServices.COMException e)
+                catch (System.Runtime.InteropServices.COMException)
                 {
                     System.Diagnostics.Debug.WriteLine("Could not load icon.");
-
-                    new Thread(() =>
-                    {
-                        try
-                        {
-                            Thread.Sleep(1500);
-                        }
-                        catch (ThreadInterruptedException e)
-                        {
-                            return;
-                        }
-
-                        UpdateDisplay();
-                    }).Start();
-
+                    await Task.Delay(TimeSpan.FromSeconds(1.5));
                 }
-                catch (FileNotFoundException fnfE)
+                catch (FileNotFoundException)
                 {
                     return;
                 }
-                finally
-                {
-                    SKBitmap bMap = null;
-                    if(thumbnail != null) bMap = thumbnail.ToSKBitmap();
-                    else bMap = Resources.Res.FileIcon;
+            }
 
-                    shortcutIcon.Image = bMap;
-
-                    if (thumbnail != null)
-                        thumbnail.Dispose();
-                }
-
-                SetActive(true);
-            });
+            shortcutIcon.Image = Resources.Res.FileIcon;
+            SetActive(true);
         }
 
         void LoadShortcut()

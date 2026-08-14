@@ -4,6 +4,7 @@ using SkiaSharp;
 using System.Collections.Specialized;
 using System.IO;
 using System.Reflection;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -279,47 +280,37 @@ namespace DynamicWin.UI.UIElements.Custom
 
         void AddFileObjects()
         {
-            new Thread(() =>
+            List<TrayFile> filesToRemove = new List<TrayFile>();
+            fileObjects.ForEach((f) => filesToRemove.Add(f));
+
+            if (cachedTrayFiles == null) cachedTrayFiles = new string[0];
+
+            foreach (var x in cachedTrayFiles)
             {
-                Thread.CurrentThread.IsBackground = true;
+                bool hasFileAlready = false;
+                TrayFile fileAlreadyExists = null;
+                fileObjects.ForEach((y) => { if (y.FileName.Equals(x)) { hasFileAlready = true; fileAlreadyExists = y; } });
 
-                List<TrayFile> filesToRemove = new List<TrayFile>();
-                fileObjects.ForEach((f) => filesToRemove.Add(f));
+                if (fileAlreadyExists != null)
+                    filesToRemove.Remove(fileAlreadyExists);
 
-                if (cachedTrayFiles == null) cachedTrayFiles = new string[0];
+                if (hasFileAlready) continue;
 
-                foreach (var x in cachedTrayFiles)
+                var f = new TrayFile(this, x, Vec2.zero, this, UIAlignment.TopLeft)
                 {
-                    bool hasFileAlready = false;
-                    TrayFile fileAlreadyExists = null;
-                    fileObjects.ForEach((y) => { if (y.FileName.Equals(x)) { hasFileAlready = true; fileAlreadyExists = y; } });
+                    Anchor = new Vec2(0, 0)
+                };
 
-                    if (fileAlreadyExists != null)
-                        filesToRemove.Remove(fileAlreadyExists);
+                fileObjects.Add(f);
+            }
 
-                    if (hasFileAlready) continue;
-
-                    var f = new TrayFile(this, x, Vec2.zero, this, UIAlignment.TopLeft)
-                    {
-                        Anchor = new Vec2(0, 0)
-                    };
-
-                    fileObjects.Add(f);
-                    //AddLocalObject(f);
-
-                    Thread.Sleep(20);
+            filesToRemove.ForEach((f) =>
+            {
+                if (f != null)
+                {
+                    fileObjects.Remove(f);
                 }
-
-                filesToRemove.ForEach((f) =>
-                {
-                    if (f != null)
-                    {
-                        //DestroyLocalObject(f);
-                        fileObjects.Remove(f);
-                    }
-                });
-
-            }).Start();
+            });
         }
 
         public static string[]? GetFiles()
@@ -335,12 +326,10 @@ namespace DynamicWin.UI.UIElements.Custom
             return Directory.GetFiles(dirPath);
         }
 
-        public static void AddFiles(string[] files)
+        public static async void AddFiles(string[] files)
         {
-            new Thread(() =>
+            await Task.Run(() =>
             {
-                Thread.CurrentThread.IsBackground = true;
-
                 var dirPath = Path.Combine(SaveManager.SavePath, "TrayFiles");
 
                 if (!Directory.Exists(dirPath))
@@ -364,8 +353,9 @@ namespace DynamicWin.UI.UIElements.Custom
                     }
                 }
 
-                cachedTrayFiles = GetFiles();
-            }).Start();
+            });
+
+            cachedTrayFiles = GetFiles();
         }
     }
 }

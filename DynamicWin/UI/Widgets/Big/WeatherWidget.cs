@@ -7,9 +7,12 @@ using Newtonsoft.Json;
 using SkiaSharp;
 using System;
 using System.Collections.Generic;
+using System.Globalization;
+using System.IO;
 using System.Linq;
 using System.Net.Http;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -162,6 +165,14 @@ namespace DynamicWin.UI.Widgets.Big
             locationText.SilentSetActive(!RegisterWeatherWidgetSettings.saveData.hideLocation);
         }
 
+        public override void OnDestroy()
+        {
+            weatherFetcher.onWeatherDataReceived -= OnWeatherDataReceived;
+            if (!weatherFetcher.HasSubscribers)
+                weatherFetcher.Stop();
+            base.OnDestroy();
+        }
+
         public override ContextMenu? GetContextMenu()
         {
             var ctx = new ContextMenu();
@@ -239,67 +250,98 @@ namespace DynamicWin.UI.Widgets.Big
 
     public class WeatherFetcher
     {
+        private static readonly HttpClient httpClient = new();
         private WeatherData weatherData = new WeatherData();
         public WeatherData Weather { get => weatherData; }
 
         public Action<WeatherData> onWeatherDataReceived;
+        private CancellationTokenSource? refreshCancellation;
+        public bool HasSubscribers => onWeatherDataReceived is not null;
 
         public void Fetch()
         {
-            Task.Run(async () =>
+            if (refreshCancellation is not null)
+                return;
+
+            refreshCancellation = new CancellationTokenSource();
+            _ = RefreshLoopAsync(refreshCancellation.Token);
+        }
+
+        public void Stop()
+        {
+            refreshCancellation?.Cancel();
+            refreshCancellation?.Dispose();
+            refreshCancellation = null;
+        }
+
+        private async Task RefreshLoopAsync(CancellationToken cancellationToken)
+        {
+            while (!cancellationToken.IsCancellationRequested)
             {
-                var httpClient = new HttpClient();
-                var response = await httpClient.GetStringAsync("https://ipinfo.io/geo");
-                var location = JsonConvert.DeserializeObject<Location>(response);
-
-                var lat = location.loc.Split(',')[0];
-                var lon = location.loc.Split(',')[1];
-
-                System.Diagnostics.Debug.WriteLine($"Latitude: {lat}, Longitude: {lon}");
-
-                string temp = null;
-                string weather = null;
-
-                XmlTextReader reader = null;
                 try
                 {
-                    string sAddress = String.Format("https://tile-service.weather.microsoft.com/livetile/front/{0},{1}", lat, lon);
+                    var response = await httpClient.GetStringAsync("https://ipinfo.io/geo", cancellationToken);
+                    var location = JsonConvert.DeserializeObject<Location>(response);
+                    var coordinates = location.loc?.Split(',');
+                    if (coordinates is not { Length: 2 })
+                        throw new InvalidDataException("Weather location is unavailable.");
 
-                    int nCpt = 0;
+                    var weatherXml = await httpClient.GetStringAsync(
+                        $"https://tile-service.weather.microsoft.com/livetile/front/{coordinates[0]},{coordinates[1]}", cancellationToken);
+                    var (temperature, weather) = ReadWeather(weatherXml);
+                    var fahrenheit = temperature.Replace("°", string.Empty, StringComparison.Ordinal);
+                    if (!double.TryParse(fahrenheit, NumberStyles.Float, CultureInfo.InvariantCulture, out var fahrenheitValue))
+                        throw new InvalidDataException("Weather temperature is invalid.");
 
-                    reader = new XmlTextReader(sAddress);
-                    reader.WhitespaceHandling = WhitespaceHandling.None;
-                    while (reader.Read())
+                    var celsius = ((fahrenheitValue - 32.0) * 5 / 9).ToString("#.#", CultureInfo.InvariantCulture);
+                    weatherData = new WeatherData
                     {
-                        if (reader.NodeType == XmlNodeType.Text)
-                        {
-                            if (nCpt == 1)
-                                temp = reader.Value;
-                            else if (nCpt == 2)
-                                weather = reader.Value;
-                            nCpt++;
-                        }
-                    }
+                        city = location.city,
+                        region = location.region,
+                        temperatureCelcius = celsius + "°C",
+                        temperatureFahrenheit = fahrenheit + "F",
+                        weatherText = weather
+                    };
+                    await System.Windows.Application.Current.Dispatcher.InvokeAsync(() => onWeatherDataReceived?.Invoke(weatherData));
                 }
-                finally
+                catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
                 {
-                    if (reader != null)
-                        reader.Close();
+                    return;
+                }
+                catch (Exception exception)
+                {
+                    System.Diagnostics.Debug.WriteLine($"Weather refresh failed: {exception.Message}");
                 }
 
-                string tempF = temp.Replace("°", "");
-                double tempC = (Double.Parse(tempF) - 32.0) * (double)5 / 9;
-                string tempCText = tempC.ToString("#.#");
+                try
+                {
+                    await Task.Delay(TimeSpan.FromMinutes(2), cancellationToken);
+                }
+                catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+                {
+                    return;
+                }
+            }
+        }
 
-                System.Diagnostics.Debug.WriteLine(String.Format("{0}, {1}F({2}°C), {3}", location.city, temp, tempCText, weather));
+        private static (string Temperature, string Weather) ReadWeather(string weatherXml)
+        {
+            using var reader = XmlReader.Create(new StringReader(weatherXml));
+            var index = 0;
+            string? temperature = null;
+            string? weather = null;
+            while (reader.Read())
+            {
+                if (reader.NodeType != XmlNodeType.Text)
+                    continue;
+                if (index == 1) temperature = reader.Value;
+                if (index == 2) weather = reader.Value;
+                index++;
+            }
 
-                weatherData = new WeatherData() { city = location.city, region = location.region, temperatureCelcius = tempCText + "°C", temperatureFahrenheit = tempF + "F", weatherText = weather };
-                onWeatherDataReceived?.Invoke(weatherData);
-
-                Thread.Sleep(120000);
-
-                Fetch();
-            });
+            if (temperature is null || weather is null)
+                throw new InvalidDataException("Weather response is incomplete.");
+            return (temperature, weather);
         }
     }
 
