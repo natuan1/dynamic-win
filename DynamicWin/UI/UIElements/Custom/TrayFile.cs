@@ -87,7 +87,7 @@ namespace DynamicWin.UI.UIElements.Custom
                 try
                 {
                     int THUMB_SIZE = 64;
-                    thumbnail = WindowsThumbnailProvider.GetThumbnail(
+                    thumbnail = DynamicWin.Platform.PlatformAdapters.Current.FileThumbnails.GetThumbnail(
                        file, THUMB_SIZE, THUMB_SIZE, ThumbnailOptions.None);
                 }
                 catch (System.Runtime.InteropServices.COMException e)

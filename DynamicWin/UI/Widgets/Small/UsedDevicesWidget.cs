@@ -160,8 +160,8 @@ namespace DynamicWin.UI.Widgets.Small
             sinCycleCamera += sinSpeed * deltaTime;
             sinCycleMicrophone += sinSpeed * deltaTime;
 
-            bool isCamActive = DeviceUsageChecker.IsWebcamInUse();
-            bool isMicActive = DeviceUsageChecker.IsMicrophoneInUse();
+            bool isCamActive = DynamicWin.Platform.PlatformAdapters.Current.DeviceUsage.IsWebcamInUse();
+            bool isMicActive = DynamicWin.Platform.PlatformAdapters.Current.DeviceUsage.IsMicrophoneInUse();
 
             camDotSizeCurrent = Mathf.Lerp(camDotSizeCurrent, isCamActive ? camDotSize : 0f, 5f * deltaTime);
             micDotSizeCurrent = Mathf.Lerp(micDotSizeCurrent, isMicActive ? micDotSize : 0f, 5f * deltaTime);
