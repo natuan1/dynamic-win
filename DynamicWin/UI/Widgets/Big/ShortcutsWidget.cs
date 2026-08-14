@@ -139,13 +139,13 @@ namespace DynamicWin.UI.Widgets.Big
             }
         }
 
-        public override ContextMenu? GetContextMenu()
+        public override System.Windows.Controls.ContextMenu? GetContextMenu()
         {
-            var ctx = new ContextMenu();
+            var ctx = new System.Windows.Controls.ContextMenu();
 
             if (string.IsNullOrEmpty(savedShortcut.path))
             {
-                var config = new MenuItem() { Header = "Configure Shortcut" };
+                var config = new System.Windows.Controls.MenuItem() { Header = "Configure Shortcut" };
                 config.Click += (s, e) =>
                 {
                     ConfigureShortcut();
@@ -154,14 +154,14 @@ namespace DynamicWin.UI.Widgets.Big
             }
             else
             {
-                var run = new MenuItem() { Header = "Run Shortcut" };
+                var run = new System.Windows.Controls.MenuItem() { Header = "Run Shortcut" };
                 run.Click += (s, e) =>
                 {
                     RunShortcut();
                 };
                 ctx.Items.Add(run);
 
-                var remove = new MenuItem() { Header = "Remove Shortcut" };
+                var remove = new System.Windows.Controls.MenuItem() { Header = "Remove Shortcut" };
                 remove.Click += (s, e) =>
                 {
                     RemoveShortcut();

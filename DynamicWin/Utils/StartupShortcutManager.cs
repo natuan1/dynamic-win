@@ -2,7 +2,6 @@
 using System.Diagnostics;
 using System.IO;
 using System.Reflection;
-using IWshRuntimeLibrary;
 
 namespace DynamicWin.Utils
 {
@@ -32,8 +31,11 @@ namespace DynamicWin.Utils
 
             string exePath = Process.GetCurrentProcess().MainModule.FileName;
 
-            WshShell wshShell = new WshShell();
-            IWshShortcut shortcut = (IWshShortcut)wshShell.CreateShortcut(shortcutPath);
+            var shellType = Type.GetTypeFromProgID("WScript.Shell")
+                ?? throw new PlatformNotSupportedException("Windows Script Host is unavailable.");
+            dynamic wshShell = Activator.CreateInstance(shellType)
+                ?? throw new InvalidOperationException("Could not create Windows Script Host.");
+            dynamic shortcut = wshShell.CreateShortcut(shortcutPath);
             shortcut.TargetPath = exePath;
             shortcut.WorkingDirectory = Path.GetDirectoryName(exePath);
             shortcut.Description = "Launches the app on system startup.";

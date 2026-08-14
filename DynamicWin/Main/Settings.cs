@@ -90,7 +90,7 @@ namespace DynamicWin.Main
 
                     Settings.Theme = 0;
 
-                    SaveManager.SaveData.Add("settings", 1);
+                    SaveManager.Add("settings", 1);
 
                     Save();
                 }

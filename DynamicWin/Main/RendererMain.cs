@@ -17,7 +17,7 @@ using SkiaSharp;
 
 namespace DynamicWin.Main
 {
-    public class RendererMain : SKElement
+    public class RendererMain : SKElement, IRenderState
     {
         private IslandObject islandObject;
         public IslandObject MainIsland => islandObject;
@@ -34,6 +34,10 @@ namespace DynamicWin.Main
         public float blurOverride = 0f;
         public float alphaOverride = 1f;
 
+        float IRenderState.BlurOverride { get => blurOverride; set => blurOverride = value; }
+        float IRenderState.AlphaOverride { get => alphaOverride; set => alphaOverride = value; }
+        Vec2 IRenderState.ScaleOffset { get => scaleOffset; set => scaleOffset = value; }
+
         public Action<float> onUpdate;
         public Action<SKCanvas> onDraw;
 
@@ -48,7 +52,7 @@ namespace DynamicWin.Main
 
         public RendererMain()
         {
-            MenuManager m = new MenuManager();
+            MenuManager m = new MenuManager(this);
             instance = this;
             islandObject = new IslandObject();
             m.Init();

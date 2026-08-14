@@ -3,15 +3,12 @@ using DynamicWin.UI.Menu.Menus;
 using DynamicWin.Utils;
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using static System.Windows.Forms.VisualStyles.VisualStyleElement.TaskbarClock;
 
 namespace DynamicWin.UI.Menu
 {
     public class MenuManager
     {
+        private readonly IRenderState renderState;
         private BaseMenu activeMenu;
         public BaseMenu ActiveMenu { get => activeMenu; }
 
@@ -21,8 +18,9 @@ namespace DynamicWin.UI.Menu
         public Action<BaseMenu, BaseMenu> onMenuChange;
         public Action<BaseMenu> onMenuChangeEnd;
 
-        public MenuManager()
+        internal MenuManager(IRenderState renderState)
         {
+            this.renderState = renderState;
             instance = this;
         }
 
@@ -47,40 +45,27 @@ namespace DynamicWin.UI.Menu
             Instance.OpenOverlay(newActiveMenu, time);
         }
 
-        static Thread overlayThread;
+        private BaseMenu? overlayReturnMenu;
+        private DateTime overlayDeadlineUtc;
+        private bool overlayIsOpen;
 
         public static void CloseOverlay()
         {
-            overlayThread.Interrupt();
+            Instance.CloseOverlayInternal();
         }
 
         private void OpenOverlay(BaseMenu newActiveMenu, float time)
         {
-            overlayThread = new Thread(() =>
-            {
-                BaseMenu lastMenu = activeMenu;
+            overlayReturnMenu = activeMenu;
+            overlayDeadlineUtc = DateTime.UtcNow.AddSeconds(time);
+            overlayIsOpen = true;
+            QueueOpenMenu(newActiveMenu);
+        }
 
-                QueueOpenMenu(newActiveMenu);
-                int timeMillis = (int)(time * 1000);
-
-                try
-                {
-                    Thread.Sleep(timeMillis);
-                }
-                catch(ThreadInterruptedException e)
-                {
-                    if (lastMenu != null)
-                        QueueOpenMenu(lastMenu);
-                    return;
-                }
-
-                if (lastMenu != null)
-                    QueueOpenMenu(lastMenu);
-                else
-                    System.Diagnostics.Debug.WriteLine("Warning: lastMenu is null in OpenOverlay method");
-
-            });
-            overlayThread.Start();
+        private void CloseOverlayInternal()
+        {
+            if (overlayIsOpen)
+                overlayDeadlineUtc = DateTime.UtcNow;
         }
 
         List<BaseMenu> menuLoadQueue = new List<BaseMenu>();
@@ -91,6 +76,14 @@ namespace DynamicWin.UI.Menu
         {
             if (menuAnimatorOut != null)
                 menuAnimatorOut.Update(deltaTime);
+
+            if (overlayIsOpen && DateTime.UtcNow >= overlayDeadlineUtc)
+            {
+                overlayIsOpen = false;
+                if (overlayReturnMenu != null)
+                    QueueOpenMenu(overlayReturnMenu);
+                overlayReturnMenu = null;
+            }
         }
 
         private void SetActiveMenu(BaseMenu newActiveMenu)
@@ -100,7 +93,7 @@ namespace DynamicWin.UI.Menu
 
             menuAnimatorOut = new Animator(300, 1);
 
-            RendererMain.Instance.blurOverride = 35f;
+            renderState.BlurOverride = 35f;
 
             if (activeMenu != null) activeMenu.OnDeload();
             activeMenu = newActiveMenu;
@@ -114,9 +107,9 @@ namespace DynamicWin.UI.Menu
 
                 var canvasSize = Vec2.lerp(Vec2.one * 0.7f, Vec2.one, easedTime2);
 
-                RendererMain.Instance.blurOverride = blurSize;
-                RendererMain.Instance.alphaOverride = alpha;
-                RendererMain.Instance.scaleOffset = canvasSize;
+                renderState.BlurOverride = blurSize;
+                renderState.AlphaOverride = alpha;
+                renderState.ScaleOffset = canvasSize;
             };
 
             menuAnimatorOut.onAnimationEnd += () =>
@@ -145,9 +138,9 @@ namespace DynamicWin.UI.Menu
                 menuLoadQueue.Remove(queueObj);
             }
 
-            RendererMain.Instance.blurOverride = 0f;
-            RendererMain.Instance.alphaOverride = 1f;
-            RendererMain.Instance.scaleOffset = Vec2.one;
+            renderState.BlurOverride = 0f;
+            renderState.AlphaOverride = 1f;
+            renderState.ScaleOffset = Vec2.one;
 
             menuAnimatorOut = null;
         }
