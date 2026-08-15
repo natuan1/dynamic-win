@@ -99,8 +99,7 @@ namespace DynamicWin.Main
 
             _trayIcon.ContextMenuStrip.Items.Add("Exit", null, (x, y) =>
             {
-                services.Settings.Save();
-                Process.GetCurrentProcess().Kill();
+                Application.Current.Shutdown();
             });
 
             _trayIcon.Visible = true;

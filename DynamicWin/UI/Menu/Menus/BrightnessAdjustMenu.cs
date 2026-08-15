@@ -83,11 +83,6 @@ namespace DynamicWin.UI.Menu.Menus
             return base.IslandSizeBig() * 1.05f;
         }
 
-        internal static int GetBrightness()
-        {
-            return RendererMain.Instance.MainIsland.Services.Platform.Brightness.Get();
-        }
-
         public override Col IslandBorderColor()
         {
             return new Col(0.5f, 0.5f, 0.5f);

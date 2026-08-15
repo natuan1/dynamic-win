@@ -7,6 +7,7 @@ using System.Windows.Forms;
 using System.Windows.Input;
 using System.Windows.Media;
 using DynamicWin.Resources;
+using DynamicWin.Platform;
 using DynamicWin.UI;
 using DynamicWin.UI.Menu;
 using DynamicWin.UI.Menu.Menus;
@@ -43,6 +44,7 @@ namespace DynamicWin.Main
 
         private Stopwatch? updateStopwatch;
         private int initialScreenBrightness = 0;
+        private readonly IDisplayBrightness brightness;
         private float deltaTime = 0f;
         public float DeltaTime => deltaTime;
 
@@ -52,12 +54,13 @@ namespace DynamicWin.Main
 
         public RendererMain(IApplicationServices services)
         {
+            brightness = services.Platform.Brightness;
             MenuManager m = new MenuManager(this);
             instance = this;
             islandObject = new IslandObject(services);
             m.Init();
 
-            initialScreenBrightness = BrightnessAdjustMenu.GetBrightness();
+            initialScreenBrightness = brightness.Get();
             KeyHandler.onKeyDown += OnKeyRegistered;
 
             MainForm.Instance.DragEnter += MainForm.Instance.MainForm_DragEnter;
@@ -138,9 +141,9 @@ namespace DynamicWin.Main
 
             onUpdate?.Invoke(DeltaTime);
 
-            if (BrightnessAdjustMenu.GetBrightness() != initialScreenBrightness && PopupOptions.saveData.brightnessPopup)
+            if (brightness.Get() != initialScreenBrightness && PopupOptions.saveData.brightnessPopup)
             {
-                initialScreenBrightness = BrightnessAdjustMenu.GetBrightness();
+                initialScreenBrightness = brightness.Get();
                 if (MenuManager.Instance.ActiveMenu is HomeMenu)
                 {
                     MenuManager.OpenOverlayMenu(new BrightnessAdjustMenu(), 100f);

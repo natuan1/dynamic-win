@@ -23,9 +23,19 @@ internal sealed class ApplicationRuntime(params IApplicationComponent[] componen
                 startedComponents.Add(component);
             }
         }
-        catch
+        catch (Exception startupException)
         {
-            StopStartedComponents();
+            try
+            {
+                StopStartedComponents();
+            }
+            catch (AggregateException cleanupException)
+            {
+                var exceptions = new List<Exception> { startupException };
+                exceptions.AddRange(cleanupException.InnerExceptions);
+                throw new AggregateException(exceptions);
+            }
+
             throw;
         }
     }
@@ -35,8 +45,14 @@ internal sealed class ApplicationRuntime(params IApplicationComponent[] componen
         if (disposed)
             return;
 
-        StopStartedComponents();
-        disposed = true;
+        try
+        {
+            StopStartedComponents();
+        }
+        finally
+        {
+            disposed = true;
+        }
     }
 
     private void StopStartedComponents()

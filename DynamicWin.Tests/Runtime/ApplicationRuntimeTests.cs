@@ -47,6 +47,21 @@ public class ApplicationRuntimeTests
         Assert.Equal(
             ["start:settings", "start:input", "start:window", "stop:window", "stop:input", "stop:settings"],
             calls);
+
+        runtime.Dispose();
+        Assert.Equal(6, calls.Count);
+    }
+
+    [Fact]
+    public void Start_preserves_startup_and_cleanup_failures()
+    {
+        var runtime = new ApplicationRuntime(
+            new RecordingComponent("settings", [], throwsOnStop: true),
+            new RecordingComponent("input", [], throwsOnStart: true));
+
+        var exception = Assert.Throws<AggregateException>(runtime.Start);
+
+        Assert.Equal(2, exception.InnerExceptions.Count);
     }
 
     private sealed class RecordingComponent(string name, List<string> calls, bool throwsOnStart = false, bool throwsOnStop = false) : IApplicationComponent
