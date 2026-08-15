@@ -357,19 +357,17 @@ namespace DynamicWin.UI
 
         public bool TryGetHoveredContextMenu(out ContextMenu? menu)
         {
-            if (IsHovering && contextMenu != null)
+            for (var index = localObjects.Count - 1; index >= 0; index--)
             {
-                menu = contextMenu;
-                return true;
+                var localObject = localObjects[index];
+                if (localObject.IsHovering && localObject.TryGetHoveredContextMenu(out menu))
+                    return true;
             }
 
-            foreach (var localObject in localObjects)
+            if (IsHovering && GetContextMenu() is { } ownContextMenu)
             {
-                if (localObject.IsHovering && localObject.GetContextMenu() != null)
-                {
-                    menu = localObject.GetContextMenu();
-                    return true;
-                }
+                menu = ownContextMenu;
+                return true;
             }
 
             menu = null;
