@@ -208,11 +208,7 @@ namespace DynamicWin.UI
                 Style = SKPaintStyle.Fill,
                 Color = this.Color.Value(),
                 IsAntialias = Settings.AntiAliasing,
-                IsDither = true,
-                SubpixelText = false,
-                FilterQuality = SKFilterQuality.Medium,
-                HintingLevel = SKPaintHinting.Normal,
-                IsLinearText = true
+                IsDither = true
             };
 
             if(GetBlur() != 0f)

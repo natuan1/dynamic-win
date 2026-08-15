@@ -41,17 +41,16 @@ namespace DynamicWin.UI.UIElements
         {
             var paint = GetPaint();
             paint.Color = Color.Value();
-            paint.TextSize = textSize;
-            paint.Typeface = font;
+            using var skFont = new SKFont(font, textSize);
 
             // Measure the width of the text
-            Size.X = paint.MeasureText(text);
+            Size.X = skFont.MeasureText(text);
 
             // Measure the height of the text
-            var fontMetrics = paint.FontMetrics;
+            var fontMetrics = skFont.Metrics;
             Size.Y = fontMetrics.Descent + fontMetrics.Ascent;
 
-            SKTextBlob blob = SKTextBlob.Create(text, new SKFont(paint.Typeface, textSize));
+            SKTextBlob blob = SKTextBlob.Create(text, skFont);
 
             if (blob != null)
             {

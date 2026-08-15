@@ -10,19 +10,27 @@ internal static class SaveManager
     public static string SavePath { get; } = Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "DynamicWin");
 
-    private static readonly ISettingsStore store = new JsonSettingsStore(SavePath, "Settings.json");
+    private static ISettingsStore? store;
 
-    public static void LoadData() => store.Load();
+    internal static void Configure(ISettingsStore settingsStore)
+    {
+        ArgumentNullException.ThrowIfNull(settingsStore);
+        store = settingsStore;
+    }
 
-    public static void SaveAll() => store.Save();
+    private static ISettingsStore Store => store ?? throw new InvalidOperationException("The settings store has not been configured.");
 
-    public static void Add(string key, object value) => store.Set(key, value);
+    public static void LoadData() => Store.Load();
 
-    public static void Remove(string key) => store.Remove(key);
+    public static void SaveAll() => Store.Save();
 
-    public static object? Get(string key) => store.Get(key);
+    public static void Add(string key, object value) => Store.Set(key, value);
 
-    public static T? Get<T>(string key) => store.Get<T>(key);
+    public static void Remove(string key) => Store.Remove(key);
 
-    public static bool Contains(string key) => store.Contains(key);
+    public static object? Get(string key) => Store.Get(key);
+
+    public static T? Get<T>(string key) => Store.Get<T>(key);
+
+    public static bool Contains(string key) => Store.Contains(key);
 }
