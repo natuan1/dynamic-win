@@ -107,7 +107,6 @@ namespace DynamicWin
 
         private void DisposeMainForm()
         {
-            RendererMain.Instance?.Destroy();
             mainForm?.DisposeTrayIcon();
         }
 

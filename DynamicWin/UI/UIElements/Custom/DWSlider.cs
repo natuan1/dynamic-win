@@ -39,7 +39,7 @@ namespace DynamicWin.UI.UIElements.Custom
             base.Update(deltaTime);
 
             if (IsMouseDown)
-                this.value = Mathf.Clamp(Mathf.Remap(RendererMain.CursorPosition.X - Position.X, 0, Size.X, 0, 1),
+                this.value = Mathf.Clamp(Mathf.Remap(Runtime.CursorPosition.X - Position.X, 0, Size.X, 0, 1),
                     0.05f, 1);
         }
     }

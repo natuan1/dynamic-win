@@ -18,17 +18,13 @@ using SkiaSharp;
 
 namespace DynamicWin.Main
 {
-    public class RendererMain : SKElement, IRenderState
+    internal class RendererMain : SKElement, IRenderState
     {
+        private readonly UiRuntime runtime;
         private IslandObject islandObject;
         public IslandObject MainIsland => islandObject;
-        private List<UIObject> objects => MenuManager.Instance.ActiveMenu.UiObjects;
-
-        public static Vec2 ScreenDimensions => new Vec2(MainForm.Instance.Width, MainForm.Instance.Height);
-        public static Vec2 CursorPosition => new Vec2(Mouse.GetPosition(MainForm.Instance).X, Mouse.GetPosition(MainForm.Instance).Y);
-
-        private static RendererMain instance;
-        public static RendererMain Instance => instance;
+        private MenuManager menuManager;
+        private List<UIObject> objects => menuManager.ActiveMenu.UiObjects;
 
         public Vec2 renderOffset = Vec2.zero;
         public Vec2 scaleOffset = Vec2.one;
@@ -52,21 +48,17 @@ namespace DynamicWin.Main
         public int canvasWithoutClip;
         private GRContext Context;
 
-        public RendererMain(IApplicationServices services)
+        public RendererMain(UiRuntime runtime)
         {
-            brightness = services.Platform.Brightness;
-            MenuManager m = new MenuManager(this);
-            instance = this;
-            islandObject = new IslandObject(services);
-            m.Init();
+            this.runtime = runtime;
+            brightness = runtime.Services.Platform.Brightness;
+            menuManager = new MenuManager(this, runtime);
+            islandObject = new IslandObject(runtime);
+            runtime.Attach(this, menuManager, islandObject);
+            menuManager.Init();
 
             initialScreenBrightness = brightness.Get();
             KeyHandler.onKeyDown += OnKeyRegistered;
-
-            MainForm.Instance.DragEnter += MainForm.Instance.MainForm_DragEnter;
-            MainForm.Instance.DragLeave += MainForm.Instance.MainForm_DragLeave;
-            MainForm.Instance.Drop += MainForm.Instance.OnDrop;
-            MainForm.Instance.MouseWheel += MainForm.Instance.OnScroll;
 
             // Get refresh rate
             int refreshRate = GetRefreshRate();
@@ -83,11 +75,8 @@ namespace DynamicWin.Main
             // if (fallbackTimer != null) fallbackTimer.Stop();
 
             KeyHandler.onKeyDown -= OnKeyRegistered;
-            MainForm.Instance.DragEnter -= MainForm.Instance.MainForm_DragEnter;
-            MainForm.Instance.DragLeave -= MainForm.Instance.MainForm_DragLeave;
-            MainForm.Instance.MouseWheel -= MainForm.Instance.OnScroll;
-
-            instance = null;
+            menuManager.Dispose();
+            runtime.Detach(this);
         }
 
         private void OnRendering(object sender, EventArgs e)
@@ -105,9 +94,9 @@ namespace DynamicWin.Main
 
             if ((key == Keys.VolumeDown || key == Keys.VolumeMute || key == Keys.VolumeUp) && PopupOptions.saveData.volumePopup)
             {
-                if (MenuManager.Instance.ActiveMenu is HomeMenu)
+                if (menuManager.ActiveMenu is HomeMenu)
                 {
-                    MenuManager.OpenOverlayMenu(new VolumeAdjustMenu(), 100f);
+                    menuManager.OpenOverlayMenu(new VolumeAdjustMenu(), 100f);
                 }
                 else if (VolumeAdjustMenu.timerUntilClose != null)
                 {
@@ -117,7 +106,7 @@ namespace DynamicWin.Main
 
             if (key == Keys.MediaNextTrack || key == Keys.MediaPreviousTrack)
             {
-                if (MenuManager.Instance.ActiveMenu is HomeMenu)
+                if (menuManager.ActiveMenu is HomeMenu)
                 {
                     if (key == Keys.MediaNextTrack) Res.HomeMenu.NextSong();
                     else Res.HomeMenu.PrevSong();
@@ -144,9 +133,9 @@ namespace DynamicWin.Main
             if (brightness.Get() != initialScreenBrightness && PopupOptions.saveData.brightnessPopup)
             {
                 initialScreenBrightness = brightness.Get();
-                if (MenuManager.Instance.ActiveMenu is HomeMenu)
+                if (menuManager.ActiveMenu is HomeMenu)
                 {
-                    MenuManager.OpenOverlayMenu(new BrightnessAdjustMenu(), 100f);
+                    menuManager.OpenOverlayMenu(new BrightnessAdjustMenu(), 100f);
                 }
                 else if (BrightnessAdjustMenu.timerUntilClose != null)
                 {
@@ -155,14 +144,14 @@ namespace DynamicWin.Main
                 }
             }
 
-            MenuManager.Instance.Update(DeltaTime);
+            menuManager.Update(DeltaTime);
 
-            if (MenuManager.Instance.ActiveMenu != null)
+            if (menuManager.ActiveMenu != null)
             {
-                MenuManager.Instance.ActiveMenu.Update();
+                menuManager.ActiveMenu.Update();
 
-                if (MenuManager.Instance.ActiveMenu is DropFileMenu && !MainForm.Instance.isDragging)
-                    MenuManager.OpenMenu(Res.HomeMenu);
+                if (menuManager.ActiveMenu is DropFileMenu && !runtime.IsDragging)
+                    menuManager.OpenMenu(Res.HomeMenu);
             }
 
             islandObject.UpdateCall(DeltaTime);

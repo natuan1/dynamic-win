@@ -19,9 +19,13 @@ namespace DynamicWin.UI
         private UIObject? parent;
         public UIObject? Parent { get { return parent; } set { parent = value; } }
         private readonly IApplicationServices? services;
+        private readonly IUiRuntime? runtime;
 
         protected internal IApplicationServices Services => services ?? parent?.Services
             ?? throw new InvalidOperationException("UI objects must be attached to an application service scope.");
+        protected internal IUiRuntime Runtime => runtime ?? parent?.Runtime
+            ?? throw new InvalidOperationException("UI objects must be attached to a UI runtime.");
+        private IUiRuntime? TryRuntime => runtime ?? parent?.Runtime;
 
         private Vec2 position = Vec2.zero;
         private Vec2 localPosition = Vec2.zero;
@@ -63,7 +67,7 @@ namespace DynamicWin.UI
         private float pAlpha = 1f;
         private float oAlpha = 1f;
 
-        public float Alpha { get => (float) Math.Min(pAlpha, Math.Min(oAlpha, RendererMain.Instance.alphaOverride)); set => oAlpha = value; }
+        public float Alpha { get => (float) Math.Min(pAlpha, Math.Min(oAlpha, Runtime.AlphaOverride)); set => oAlpha = value; }
 
         protected void AddLocalObject(UIObject obj)
         {
@@ -77,27 +81,31 @@ namespace DynamicWin.UI
             localObjects.Remove(obj);
         }
 
-        public UIObject(UIObject? parent, Vec2 position, Vec2 size, UIAlignment alignment = UIAlignment.TopCenter, IApplicationServices? services = null)
+        public UIObject(UIObject? parent, Vec2 position, Vec2 size, UIAlignment alignment = UIAlignment.TopCenter, IApplicationServices? services = null, IUiRuntime? runtime = null)
         {
             this.parent = parent;
             this.services = services;
+            this.runtime = runtime;
             this.position = position;
             this.size = size;
             this.alignment = alignment;
 
             this.contextMenu = CreateContextMenu();
 
-            RendererMain.Instance.ContextMenuOpening += CtxOpen;
-            RendererMain.Instance.ContextMenuClosing += CtxClose;
+            if (TryRuntime != null)
+            {
+                Runtime.ContextMenuOpening += CtxOpen;
+                Runtime.ContextMenuClosing += CtxClose;
+            }
         }
 
-        void CtxOpen(object sender, RoutedEventArgs e)
+        void CtxOpen(object sender, ContextMenuEventArgs e)
         {
-            if(RendererMain.Instance.ContextMenu != null)
+            if(Runtime.ContextMenu != null)
                 canInteract = false;
         }
 
-        void CtxClose(object sender, RoutedEventArgs e)
+        void CtxClose(object sender, ContextMenuEventArgs e)
         {
             canInteract = true;
         }
@@ -109,21 +117,21 @@ namespace DynamicWin.UI
             if (alignment == UIAlignment.None) alignment = this.alignment;
 
             var containerPosition = parent?.Position ?? Vec2.zero;
-            var containerSize = parent?.Size ?? RendererMain.ScreenDimensions;
+            var containerSize = parent?.Size ?? Runtime.ScreenDimensions;
             return UiLayout.ResolvePosition(position, Size, Anchor, alignment, containerPosition, containerSize);
         }
 
         protected virtual Vec2 GetPosition()
         {
             var containerPosition = parent?.Position ?? Vec2.zero;
-            var containerSize = parent?.Size ?? RendererMain.ScreenDimensions;
+            var containerSize = parent?.Size ?? Runtime.ScreenDimensions;
             return UiLayout.ResolvePosition(position, Size, Anchor, alignment, containerPosition, containerSize);
         }
 
         public float GetBlur()
         {
             if (!Settings.AllowBlur) return 0f;
-            return Math.Max(blurAmount, Math.Max(localBlurAmount, Math.Max((parent == null) ? 0f : parent.GetBlur(), RendererMain.Instance.blurOverride)));
+            return Math.Max(blurAmount, Math.Max(localBlurAmount, Math.Max((parent == null) ? 0f : parent.GetBlur(), Runtime.BlurOverride)));
         }
 
         bool canInteract = true;
@@ -137,7 +145,8 @@ namespace DynamicWin.UI
 
             if (canInteract)
             {
-                var rect = SKRect.Create(RendererMain.CursorPosition.X, RendererMain.CursorPosition.Y, 1, 1);
+                var cursorPosition = Runtime.CursorPosition;
+                var rect = SKRect.Create(cursorPosition.X, cursorPosition.Y, 1, 1);
                 isHovering = GetInteractionRect().Contains(rect);
 
                 if (!isGlobalMouseDown && Mouse.LeftButton == MouseButtonState.Pressed)
@@ -237,6 +246,11 @@ namespace DynamicWin.UI
                 obj.DestroyCall();
             });
 
+            if (TryRuntime != null)
+            {
+                Runtime.ContextMenuOpening -= CtxOpen;
+                Runtime.ContextMenuClosing -= CtxClose;
+            }
             OnDestroy();
         }
 

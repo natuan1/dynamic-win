@@ -12,14 +12,25 @@ namespace DynamicWin.UI.Menu
     public class BaseMenu : IDisposable
     {
         private List<UIObject> uiObjects = new List<UIObject>();
-        protected IApplicationServices Services { get; }
+        private IUiRuntime? runtime;
+        private IslandObject? attachedIsland;
+        protected IApplicationServices Services => Runtime.Services;
+        protected IUiRuntime Runtime => runtime
+            ?? throw new InvalidOperationException("Menu must be attached to the UI runtime before use.");
 
         public List<UIObject> UiObjects { get { return uiObjects; } }
 
         public BaseMenu()
         {
-            Services = RendererMain.Instance.MainIsland.Services;
-            uiObjects = InitializeMenu(RendererMain.Instance.MainIsland);
+        }
+
+        internal void Attach(IUiRuntime runtime, IslandObject island)
+        {
+            if (this.runtime == runtime && attachedIsland == island && uiObjects.Count != 0) return;
+
+            this.runtime = runtime;
+            attachedIsland = island;
+            uiObjects = InitializeMenu(island);
         }
 
         public virtual Vec2 IslandSize() { return new Vec2(200, 45); }
@@ -30,11 +41,13 @@ namespace DynamicWin.UI.Menu
         public virtual List<UIObject> InitializeMenu(IslandObject island) { return new List<UIObject>(); }
 
         public virtual void Update() { }
+        public virtual void OnLoad() { }
 
         public virtual void OnDeload() { }
 
         public void Dispose()
         {
+            uiObjects.ForEach(obj => obj.DestroyCall());
             uiObjects.Clear();
         }
     }

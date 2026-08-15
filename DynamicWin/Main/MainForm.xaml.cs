@@ -15,13 +15,10 @@ namespace DynamicWin.Main
 {
     public partial class MainForm : Window
     {
-        private static MainForm instance;
-        public static MainForm Instance { get => instance; }
-
-        public static Action<System.Windows.Input.MouseWheelEventArgs> onScrollEvent;
-
         private readonly Forms.NotifyIcon _trayIcon;
         private readonly IApplicationServices services;
+        private readonly UiRuntime runtime;
+        private RendererMain? renderer;
 
         private DateTime _lastRenderTime;
         private readonly TimeSpan _targetElapsedTime = TimeSpan.FromMilliseconds(16); // ~60 FPS
@@ -45,10 +42,9 @@ namespace DynamicWin.Main
             InitializeComponent();
 
             _trayIcon = new Forms.NotifyIcon();
+            runtime = new UiRuntime(this, services);
 
             CompositionTarget.Rendering += OnRendering;
-
-            instance = this;
 
             this.WindowStyle = WindowStyle.None;
             this.WindowState = WindowState.Maximized;
@@ -57,6 +53,11 @@ namespace DynamicWin.Main
             this.AllowsTransparency = true;
             this.ShowInTaskbar = false;
             this.Title = "DynamicWin Overlay";
+            DragEnter += MainForm_DragEnter;
+            DragLeave += MainForm_DragLeave;
+            Drop += OnDrop;
+            MouseWheel += OnScroll;
+            Theme.Instance.SetRendererRefresh(runtime.RestartRenderer);
 
             // Loaded event to ensure that this does not show the application on the Alt+Tab switcher
 
@@ -75,7 +76,7 @@ namespace DynamicWin.Main
             AddRenderer();
 
             Res.extensions.ForEach((x) => x.LoadExtension());
-            MainForm.Instance.AllowDrop = true;
+            AllowDrop = true;
 
             // Tray icon
 
@@ -86,15 +87,12 @@ namespace DynamicWin.Main
 
             _trayIcon.ContextMenuStrip.Items.Add("Restart Control", null, (x, y) =>
             {
-                if (RendererMain.Instance != null) RendererMain.Instance.Destroy();
-                this.Content = new Grid();
-
                 AddRenderer();
             });
 
             _trayIcon.ContextMenuStrip.Items.Add("Settings", null, (x, y) =>
             {
-                MenuManager.OpenMenu(new SettingsMenu());
+                runtime.OpenMenu(new SettingsMenu());
             });
 
             _trayIcon.ContextMenuStrip.Items.Add("Exit", null, (x, y) =>
@@ -150,14 +148,16 @@ namespace DynamicWin.Main
 
         public void OnScroll(object? sender, System.Windows.Input.MouseWheelEventArgs e)
         {
-            onScrollEvent?.Invoke(e);
+            runtime.OnScroll(e);
         }
 
         public void AddRenderer()
         {
-            if (RendererMain.Instance != null) RendererMain.Instance.Destroy();
+            renderer?.Destroy();
+            Content = new Grid();
 
-            var customControl = new RendererMain(services);
+            var customControl = new RendererMain(runtime);
+            renderer = customControl;
             
             var parent = new Grid();
             parent.Children.Add(customControl);
@@ -172,10 +172,10 @@ namespace DynamicWin.Main
             isDragging = true;
             e.Effects = DragDropEffects.Copy;
 
-            if (!(MenuManager.Instance.ActiveMenu is DropFileMenu)
-                && !(MenuManager.Instance.ActiveMenu is ConfigureShortcutMenu))
+            if (!(runtime.ActiveMenu is DropFileMenu)
+                && !(runtime.ActiveMenu is ConfigureShortcutMenu))
             {
-                MenuManager.OpenMenu(new DropFileMenu());
+                runtime.OpenMenu(new DropFileMenu());
             }
         }
 
@@ -185,8 +185,8 @@ namespace DynamicWin.Main
 
             isDragging = false;
 
-            if (MenuManager.Instance.ActiveMenu is ConfigureShortcutMenu) return;
-            MenuManager.OpenMenu(Res.HomeMenu);
+            if (runtime.ActiveMenu is ConfigureShortcutMenu) return;
+            runtime.OpenMenu(Res.HomeMenu);
         }
 
         bool isLocalDrag = false;
@@ -207,8 +207,6 @@ namespace DynamicWin.Main
                 DataObject dataObject = new DataObject(DataFormats.FileDrop, files);
                 var effects = DragDrop.DoDragDrop((DependencyObject)this, dataObject, DragDropEffects.Move | DragDropEffects.Copy);
 
-                if (RendererMain.Instance != null) RendererMain.Instance.Destroy();
-                this.Content = new Grid();
                 AddRenderer();
 
                 callback?.Invoke();
@@ -254,7 +252,7 @@ namespace DynamicWin.Main
         {
             isDragging = false;
 
-            if(MenuManager.Instance.ActiveMenu is ConfigureShortcutMenu)
+            if(runtime.ActiveMenu is ConfigureShortcutMenu)
             {
                 if (e.Data.GetDataPresent(DataFormats.FileDrop))
                 {
@@ -264,13 +262,18 @@ namespace DynamicWin.Main
             else if (e.Data.GetDataPresent(DataFormats.FileDrop))
             {
                 DropFileMenu.Drop(e);
-                MenuManager.Instance.QueueOpenMenu(Res.HomeMenu);
+                runtime.QueueOpenMenu(Res.HomeMenu);
                 Res.HomeMenu.isWidgetMode = false;
             }
         }
 
         internal void DisposeTrayIcon()
         {
+            renderer?.Destroy();
+            DragEnter -= MainForm_DragEnter;
+            DragLeave -= MainForm_DragLeave;
+            Drop -= OnDrop;
+            MouseWheel -= OnScroll;
             _trayIcon.Dispose();
         }
     }

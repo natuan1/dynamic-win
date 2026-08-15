@@ -58,11 +58,11 @@ namespace DynamicWin.UI.Menu.Menus
         {
             base.Update();
 
-            if (timerUntilClose > 2.75f) MenuManager.CloseOverlay();
+            if (timerUntilClose > 2.75f) Runtime.CloseOverlay();
 
-            islandScale = Mathf.Lerp(islandScale, 1f, 5f * RendererMain.Instance.DeltaTime);
+            islandScale = Mathf.Lerp(islandScale, 1f, 5f * Runtime.DeltaTime);
 
-            timerUntilClose += RendererMain.Instance.DeltaTime;
+            timerUntilClose += Runtime.DeltaTime;
 
             this.brightness.value = (float)Services.Platform.Brightness.Get() / 100f;
 
@@ -70,7 +70,7 @@ namespace DynamicWin.UI.Menu.Menus
                 KeyHandler.keyDown.Contains(System.Windows.Forms.Keys.VolumeDown) ? -2f : 0;
 
             this.brightness.LocalPosition.X = Mathf.Lerp(this.brightness.LocalPosition.X, volXOffset, 
-                (Math.Abs(volXOffset) > Math.Abs(this.brightness.LocalPosition.X) ? 4.5f : 2.5f) * RendererMain.Instance.DeltaTime);
+                (Math.Abs(volXOffset) > Math.Abs(this.brightness.LocalPosition.X) ? 4.5f : 2.5f) * Runtime.DeltaTime);
         }
 
         public override Vec2 IslandSize()

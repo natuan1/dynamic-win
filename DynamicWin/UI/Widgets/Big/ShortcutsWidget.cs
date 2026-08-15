@@ -244,7 +244,7 @@ namespace DynamicWin.UI.Widgets.Big
 
         void ConfigureShortcut()
         {
-            MenuManager.OpenMenu(new ConfigureShortcutMenu(this));
+            Runtime.OpenMenu(new ConfigureShortcutMenu(this));
         }
 
         void OpenWithDefaultProgram(string path)

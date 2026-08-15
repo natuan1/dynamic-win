@@ -29,7 +29,6 @@ namespace DynamicWin.UI.Menu.Menus
 
         public SettingsMenu()
         {
-            MainForm.onScrollEvent += OnSettingsScroll;
         }
 
         void OnSettingsScroll(MouseWheelEventArgs x)
@@ -37,9 +36,14 @@ namespace DynamicWin.UI.Menu.Menus
             yScrollOffset += x.Delta * 0.25f;
         }
 
+        public override void OnLoad()
+        {
+            Runtime.Scroll += OnSettingsScroll;
+        }
+
         public override void OnDeload()
         {
-            MainForm.onScrollEvent -= OnSettingsScroll;
+            Runtime.Scroll -= OnSettingsScroll;
         }
 
         bool changedTheme = false;
@@ -58,7 +62,7 @@ namespace DynamicWin.UI.Menu.Menus
             else
             {
                 Res.HomeMenu = new HomeMenu();
-                MenuManager.OpenMenu(Res.HomeMenu);
+                Runtime.OpenMenu(Res.HomeMenu);
             }
 
             foreach (var item in customOptions)
@@ -137,7 +141,7 @@ namespace DynamicWin.UI.Menu.Menus
                 selectedMonitorTitle.Anchor.X = 0;
                 objects.Add(selectedMonitorTitle);
 
-                var selectedMonitors = new string[MainForm.GetMonitorCount()];
+                var selectedMonitors = new string[Runtime.GetMonitorCount()];
                 for(int i = 0; i < selectedMonitors.Length; i++)
                 {
                     if (i == 0) selectedMonitors[i] = "Primary";
@@ -145,12 +149,12 @@ namespace DynamicWin.UI.Menu.Menus
                 }
 
                 var selectedMonitor = new MultiSelectionButton(island, selectedMonitors, new Vec2(25, 0), new Vec2(IslandSize().X - 50, 25), UIAlignment.TopLeft);
-                selectedMonitor.SelectedIndex = Math.Clamp(Settings.ScreenIndex, 0, MainForm.GetMonitorCount() - 1);
+                selectedMonitor.SelectedIndex = Math.Clamp(Settings.ScreenIndex, 0, Runtime.GetMonitorCount() - 1);
                 selectedMonitor.Anchor.X = 0;
                 selectedMonitor.onClick += (index) =>
                 {
                     Settings.ScreenIndex = index;
-                    MainForm.Instance.SetMonitor(Settings.ScreenIndex);
+                    Runtime.SetMonitor(Settings.ScreenIndex);
                 };
                 objects.Add(selectedMonitor);
             }
@@ -317,7 +321,7 @@ namespace DynamicWin.UI.Menu.Menus
             base.Update();
 
             ySmoothScroll = Mathf.Lerp(ySmoothScroll,
-                yScrollOffset, 10f * RendererMain.Instance.DeltaTime);
+                yScrollOffset, 10f * Runtime.DeltaTime);
 
             bottomMask.blurAmount = 15;
 
@@ -337,7 +341,7 @@ namespace DynamicWin.UI.Menu.Menus
             }
 
             yScrollOffset = Mathf.Lerp(yScrollOffset,
-                Mathf.Clamp(yScrollOffset, -yScrollLim, 0f), 15f * RendererMain.Instance.DeltaTime);
+                Mathf.Clamp(yScrollOffset, -yScrollLim, 0f), 15f * Runtime.DeltaTime);
         }
 
         public override Vec2 IslandSize()
@@ -444,7 +448,7 @@ namespace DynamicWin.UI.Menu.Menus
             addNew.Size.X           = Mathf.Lerp(addNew.Size.X, isDisplayEven() ? Size.X : Size.X / 2, 15f * deltaTime);
 
             var lines2 = (int)Math.Max(1, (displays.Count / maxE + 1));
-            Size.Y = Mathf.Lerp(Size.Y, lines2 * 45, 15f * RendererMain.Instance.DeltaTime);
+            Size.Y = Mathf.Lerp(Size.Y, lines2 * 45, 15f * Runtime.DeltaTime);
         }
 
         bool isDisplayEven()

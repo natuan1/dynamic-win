@@ -22,7 +22,7 @@ namespace DynamicWin.UI.UIElements.Custom
 
         public Tray(UIObject? parent, Vec2 position, Vec2 size, UIAlignment alignment = UIAlignment.TopCenter) : base(parent, position, size, alignment)
         {
-            MainForm.onScrollEvent += OnScroll;
+            Runtime.Scroll += OnScroll;
         }
 
         public override ContextMenu? GetContextMenu()
@@ -77,7 +77,7 @@ namespace DynamicWin.UI.UIElements.Custom
         {
             base.OnDestroy();
 
-            MainForm.onScrollEvent -= OnScroll;
+            Runtime.Scroll -= OnScroll;
         }
 
         Vec2 mouseDownPos = Vec2.zero;
@@ -88,7 +88,7 @@ namespace DynamicWin.UI.UIElements.Custom
         {
             base.OnMouseDown();
 
-            mouseDownPos = new Vec2(RendererMain.CursorPosition.X, RendererMain.CursorPosition.Y);
+            mouseDownPos = new Vec2(Runtime.CursorPosition.X, Runtime.CursorPosition.Y);
             canDrag = true;
         }
 
@@ -162,7 +162,7 @@ namespace DynamicWin.UI.UIElements.Custom
                 }
             });
 
-            if (!isDragging && canDrag && IsMouseDown && Vec2.Distance(RendererMain.CursorPosition, mouseDownPos) >= 25)
+            if (!isDragging && canDrag && IsMouseDown && Vec2.Distance(Runtime.CursorPosition, mouseDownPos) >= 25)
             {
                 isDragging = true;
 
@@ -178,7 +178,7 @@ namespace DynamicWin.UI.UIElements.Custom
                     }
                 });
 
-                MainForm.Instance.StartDrag(draggedFiles.ToArray(), () =>
+                Runtime.StartDrag(draggedFiles.ToArray(), () =>
                 {
                     List<TrayFile> toRemove = new List<TrayFile>();
                     fileObjects.ForEach((f) =>

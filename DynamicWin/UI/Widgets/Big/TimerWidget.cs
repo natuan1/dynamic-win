@@ -171,9 +171,9 @@ namespace DynamicWin.UI.Widgets.Big
         void TimerEnd()
         {
             StopTimer();
-            RendererMain.Instance.MainIsland.hidden = false;
+            Runtime.MainIsland.hidden = false;
 
-            MenuManager.OpenOverlayMenu(new TimerOverMenu(), 15f);
+            Runtime.OpenOverlayMenu(new TimerOverMenu(), 15f);
         }
 
         static int elapsedSeconds = 0;

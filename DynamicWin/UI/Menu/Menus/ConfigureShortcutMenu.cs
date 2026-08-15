@@ -72,7 +72,7 @@ namespace DynamicWin.UI.Menu.Menus
             DWTextButton saveAndBack = new DWTextButton(island, "Save & Back", new Utils.Vec2(0, -30), new Utils.Vec2(IslandSize().X - 30, 30), () =>
             {
                 _shortcutButtonToConfigure.SetShortcut(save);
-                MenuManager.OpenMenu(Res.HomeMenu);
+                Runtime.OpenMenu(Res.HomeMenu);
             }, UIAlignment.BottomCenter);
             saveAndBack.hoverScaleMulti = Vec2.one * 1.025f;
             saveAndBack.roundRadius = 15;

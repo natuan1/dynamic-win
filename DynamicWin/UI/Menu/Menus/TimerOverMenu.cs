@@ -55,7 +55,7 @@ namespace DynamicWin.UI.Menu.Menus
         {
             base.Update();
 
-            var delta = RendererMain.Instance.DeltaTime;
+            var delta = Runtime.DeltaTime;
             sinCycle += delta * speed;
 
             overText.TextSize = Mathf.Remap((float)Math.Sin(sinCycle), -1, 1, 20, 25);
@@ -73,8 +73,8 @@ namespace DynamicWin.UI.Menu.Menus
 
             islandSizeMulti = Mathf.Lerp(islandSizeMulti, 1f, 5f * delta);
 
-            if (RendererMain.Instance.MainIsland.IsHovering && sinCycle >= 1)
-                MenuManager.CloseOverlay();
+            if (Runtime.MainIsland.IsHovering && sinCycle >= 1)
+                Runtime.CloseOverlay();
         }
 
         public override Vec2 IslandSize()
@@ -120,7 +120,7 @@ namespace DynamicWin.UI.Menu.Menus
 
             var rect = SKRect.Create(Position.X, Position.Y, Size.X, Size.Y);
 
-            canvas.ClipRoundRect(RendererMain.Instance.MainIsland.GetRect(), SKClipOperation.Difference, true);
+            canvas.ClipRoundRect(Runtime.MainIsland.GetRect(), SKClipOperation.Difference, true);
 
             paint.Color = GetColor(Theme.Primary.Override(a: 1)).Value();
             paint.IsStroke = true;
