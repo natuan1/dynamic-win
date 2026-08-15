@@ -315,7 +315,7 @@ namespace DynamicWin.UI.UIElements.Custom
 
         public static string[]? GetFiles()
         {
-            var dirPath = Path.Combine(SaveManager.SavePath, "TrayFiles");
+            var dirPath = Path.Combine(ApplicationDataPaths.SettingsDirectory, "TrayFiles");
 
             if (!Directory.Exists(dirPath))
             {
@@ -330,7 +330,7 @@ namespace DynamicWin.UI.UIElements.Custom
         {
             await Task.Run(() =>
             {
-                var dirPath = Path.Combine(SaveManager.SavePath, "TrayFiles");
+                var dirPath = Path.Combine(ApplicationDataPaths.SettingsDirectory, "TrayFiles");
 
                 if (!Directory.Exists(dirPath))
                 {

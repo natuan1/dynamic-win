@@ -1,4 +1,6 @@
 .vs/
 /DynamicWin/bin/
 /DynamicWin/obj/
+/DynamicWin.Tests/bin/
+/DynamicWin.Tests/obj/
 /DynamicWinSetup

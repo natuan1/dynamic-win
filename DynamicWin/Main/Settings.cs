@@ -36,32 +36,32 @@ namespace DynamicWin.Main
         public static List<string> smallWidgetsMiddle;
         public static List<string> bigWidgets;
 
-        public static void InitializeSettings()
+        public static void InitializeSettings(ISettingsStore settingsStore)
         {
             try
             {
 
-                if (SaveManager.Contains("settings.islandmode"))
+                if (settingsStore.Contains("settings.islandmode"))
                 {
-                    IslandMode = ((Int64)SaveManager.Get("settings.islandmode") == 0) ? IslandObject.IslandMode.Island : IslandObject.IslandMode.Notch;
+                    IslandMode = ((Int64)settingsStore.Get("settings.islandmode") == 0) ? IslandObject.IslandMode.Island : IslandObject.IslandMode.Notch;
 
-                    AllowBlur = (bool)SaveManager.Get("settings.allowblur");
-                    AllowAnimation = (bool)SaveManager.Get("settings.allowanimtion");
-                    AntiAliasing = (bool)SaveManager.Get("settings.antialiasing");
-                    RunOnStartup = (bool)SaveManager.Get("settings.runonstartup");
+                    AllowBlur = (bool)settingsStore.Get("settings.allowblur");
+                    AllowAnimation = (bool)settingsStore.Get("settings.allowanimtion");
+                    AntiAliasing = (bool)settingsStore.Get("settings.antialiasing");
+                    RunOnStartup = (bool)settingsStore.Get("settings.runonstartup");
 
-                    Theme = (int)((Int64)SaveManager.Get("settings.theme"));
-                    ScreenIndex = (int)((Int64)SaveManager.Get("settings.screenindex"));
+                    Theme = (int)((Int64)settingsStore.Get("settings.theme"));
+                    ScreenIndex = (int)((Int64)settingsStore.Get("settings.screenindex"));
 
                     Settings.smallWidgetsLeft = new List<string>();
                     Settings.smallWidgetsRight = new List<string>();
                     Settings.smallWidgetsMiddle = new List<string>();
                     Settings.bigWidgets = new List<string>();
 
-                    var smallWidgetsLeft = (JArray)SaveManager.Get("settings.smallwidgetsleft");
-                    var smallWidgetsRight = (JArray)SaveManager.Get("settings.smallwidgetsright");
-                    var smallWidgetsMiddle = (JArray)SaveManager.Get("settings.smallwidgetsmiddle");
-                    var bigWidgets = (JArray)SaveManager.Get("settings.bigwidgets");
+                    var smallWidgetsLeft = (JArray)settingsStore.Get("settings.smallwidgetsleft");
+                    var smallWidgetsRight = (JArray)settingsStore.Get("settings.smallwidgetsright");
+                    var smallWidgetsMiddle = (JArray)settingsStore.Get("settings.smallwidgetsmiddle");
+                    var bigWidgets = (JArray)settingsStore.Get("settings.bigwidgets");
 
                     foreach (var x in smallWidgetsLeft)
                         Settings.smallWidgetsLeft.Add(x.ToString());
@@ -90,14 +90,14 @@ namespace DynamicWin.Main
 
                     Settings.Theme = 0;
 
-                    SaveManager.Add("settings", 1);
+                    settingsStore.Set("settings", 1);
 
-                    Save();
+                    Save(settingsStore);
                 }
 
 
                 // This must be run after loading all settings
-                AfterSettingsLoaded();
+                AfterSettingsLoaded(settingsStore);
             }catch(Exception e)
             {
                 MessageBox.Show("An error occured trying to load the settings. Please revert back to the default settings by deleting the \"Settings.json\" file located under \"%appdata%/DynamicWin/\".");
@@ -107,11 +107,11 @@ namespace DynamicWin.Main
                 smallWidgetsMiddle = new List<string>();
                 bigWidgets = new List<string>();
 
-                AfterSettingsLoaded();
+                AfterSettingsLoaded(settingsStore);
             }
         }
 
-        static void AfterSettingsLoaded()
+        static void AfterSettingsLoaded(ISettingsStore settingsStore)
         {
             DynamicWin.Utils.Theme.Instance.UpdateTheme();
 
@@ -119,28 +119,28 @@ namespace DynamicWin.Main
 
             foreach (var item in customOptions)
             {
-                item.LoadSettings();
+                item.LoadSettings(settingsStore);
             }
         }
 
-        public static void Save()
+        public static void Save(ISettingsStore settingsStore)
         {
-            SaveManager.Add("settings.islandmode", (IslandMode == IslandObject.IslandMode.Island) ? 0 : 1);
+            settingsStore.Set("settings.islandmode", (IslandMode == IslandObject.IslandMode.Island) ? 0 : 1);
 
-            SaveManager.Add("settings.allowblur", AllowBlur);
-            SaveManager.Add("settings.allowanimtion", AllowAnimation);
-            SaveManager.Add("settings.antialiasing", AntiAliasing);
-            SaveManager.Add("settings.runonstartup", RunOnStartup);
+            settingsStore.Set("settings.allowblur", AllowBlur);
+            settingsStore.Set("settings.allowanimtion", AllowAnimation);
+            settingsStore.Set("settings.antialiasing", AntiAliasing);
+            settingsStore.Set("settings.runonstartup", RunOnStartup);
 
-            SaveManager.Add("settings.theme", Theme);
-            SaveManager.Add("settings.screenindex", ScreenIndex);
+            settingsStore.Set("settings.theme", Theme);
+            settingsStore.Set("settings.screenindex", ScreenIndex);
 
-            SaveManager.Add("settings.smallwidgetsleft", smallWidgetsLeft);
-            SaveManager.Add("settings.smallwidgetsright", smallWidgetsRight);
-            SaveManager.Add("settings.smallwidgetsmiddle", smallWidgetsMiddle);
-            SaveManager.Add("settings.bigwidgets", bigWidgets);
+            settingsStore.Set("settings.smallwidgetsleft", smallWidgetsLeft);
+            settingsStore.Set("settings.smallwidgetsright", smallWidgetsRight);
+            settingsStore.Set("settings.smallwidgetsmiddle", smallWidgetsMiddle);
+            settingsStore.Set("settings.bigwidgets", bigWidgets);
 
-            SaveManager.SaveAll();
+            settingsStore.Save();
         }
     }
 }

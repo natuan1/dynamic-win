@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace DynamicWin.Utils
 {
-    internal class HardwareMonitor
+    internal class HardwareMonitor : IDisposable
     {
         System.Timers.Timer timer;
 
@@ -113,12 +113,15 @@ namespace DynamicWin.Utils
             }
         }
 
-        public static void Stop()
+        public static void Stop() => instance?.Dispose();
+
+        public void Dispose()
         {
-            if( instance.computer != null )
-            {
-                instance.computer.Close();
-            }
+            timer.Stop();
+            timer.Dispose();
+            computer?.Close();
+            if (ReferenceEquals(instance, this))
+                instance = null;
         }
     }
 }

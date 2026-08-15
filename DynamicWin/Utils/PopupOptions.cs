@@ -24,11 +24,11 @@ namespace DynamicWin.Utils
             public bool brightnessPopup;
         }
 
-        public void LoadSettings()
+        public void LoadSettings(ISettingsStore settings)
         {
-            if (SaveManager.Contains(SettingID))
+            if (settings.Contains(SettingID))
             {
-                saveData = JsonConvert.DeserializeObject<PopupOptionsSave>((string)SaveManager.Get(SettingID));
+                saveData = JsonConvert.DeserializeObject<PopupOptionsSave>((string)settings.Get(SettingID));
             }
             else
             {
@@ -36,9 +36,9 @@ namespace DynamicWin.Utils
             }
         }
 
-        public void SaveSettings()
+        public void SaveSettings(ISettingsStore settings)
         {
-            SaveManager.Add(SettingID, JsonConvert.SerializeObject(saveData));
+            settings.Set(SettingID, JsonConvert.SerializeObject(saveData));
         }
 
         public List<UIObject> SettingsObjects()

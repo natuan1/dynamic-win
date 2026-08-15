@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using DynamicWin.Utils;
 
 namespace DynamicWin.UI.Widgets
 {
@@ -23,11 +24,11 @@ namespace DynamicWin.UI.Widgets
         /// <summary>
         /// Every setting that the IRegisterableSetting class adds has to be saved. Do it here.
         /// </summary>
-        public void SaveSettings();
+        public void SaveSettings(ISettingsStore settings);
 
         /// <summary>
         /// Every setting that the IRegisterableSetting class adds has to be loaded. Do it here.
         /// </summary>
-        public void LoadSettings();
+        public void LoadSettings(ISettingsStore settings);
     }
 }

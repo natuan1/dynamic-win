@@ -5,13 +5,13 @@ using ThumbnailGenerator;
 namespace DynamicWin.Platform;
 
 public interface IMediaTransport { void PlayPause(); void Next(); void Previous(); }
-internal interface IDisplayBrightness { int Get(); void Set(int brightness); }
-internal interface IDeviceUsageReader { bool IsMicrophoneInUse(); bool IsWebcamInUse(); }
-internal interface IStartupShortcutAdapter { void CreateShortcut(); bool RemoveShortcut(); }
-internal interface IFileThumbnailAdapter { Bitmap GetThumbnail(string fileName, int width, int height, ThumbnailOptions options); }
-internal interface IHardwareUsageReader { string CurrentUsage { get; } }
+public interface IDisplayBrightness { int Get(); void Set(int brightness); }
+public interface IDeviceUsageReader { bool IsMicrophoneInUse(); bool IsWebcamInUse(); }
+public interface IStartupShortcutAdapter { void CreateShortcut(); bool RemoveShortcut(); }
+public interface IFileThumbnailAdapter { Bitmap GetThumbnail(string fileName, int width, int height, ThumbnailOptions options); }
+public interface IHardwareUsageReader { string CurrentUsage { get; } }
 
-internal interface IPlatformAdapters
+public interface IPlatformAdapters
 {
     IMediaTransport Media { get; }
     IDisplayBrightness Brightness { get; }
@@ -19,11 +19,6 @@ internal interface IPlatformAdapters
     IStartupShortcutAdapter StartupShortcuts { get; }
     IFileThumbnailAdapter FileThumbnails { get; }
     IHardwareUsageReader HardwareUsage { get; }
-}
-
-internal static class PlatformAdapters
-{
-    public static IPlatformAdapters Current { get; set; } = new WindowsPlatformAdapters();
 }
 
 internal sealed class WindowsPlatformAdapters : IPlatformAdapters

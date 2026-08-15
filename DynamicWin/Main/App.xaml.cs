@@ -25,17 +25,17 @@ namespace DynamicWin
             m.Run();
         }
 
-        public static void UpdateStartup()
+        private static void UpdateStartup(DynamicWin.Platform.IStartupShortcutAdapter startupShortcuts)
         {
             try
             {
                 if (Settings.RunOnStartup)
                 {
-                    DynamicWin.Platform.PlatformAdapters.Current.StartupShortcuts.CreateShortcut();
+                    startupShortcuts.CreateShortcut();
                 }
                 else
                 {
-                    DynamicWin.Platform.PlatformAdapters.Current.StartupShortcuts.RemoveShortcut();
+                    startupShortcuts.RemoveShortcut();
                 }
             }
             catch (Exception ex)
@@ -47,6 +47,8 @@ namespace DynamicWin
 
 
         Mutex mutex;
+        private ApplicationRuntime? runtime;
+        private MainForm? mainForm;
 
         protected override void OnStartup(StartupEventArgs e)
         {
@@ -66,45 +68,47 @@ namespace DynamicWin
                 return;
             }
 
-            //SetHighPriority();
-
-            try
-            {
-                var devEnum = new MMDeviceEnumerator();
-                defaultDevice = devEnum.GetDefaultAudioEndpoint(DataFlow.Render, Role.Multimedia);
-                defaultMicrophone = devEnum.GetDefaultAudioEndpoint(DataFlow.Capture, Role.Multimedia);
-            }catch(Exception exception)
-            {
-                defaultDevice = null;
-                defaultMicrophone = null;
-            }
-
-            SaveManager.LoadData();
-
-            Res.Load();
-            KeyHandler.Start();
-            new Theme();
-
-            new HardwareMonitor();
-
-            Settings.InitializeSettings();
-            UpdateStartup();
-
-            MainForm mainForm = new MainForm();
-            mainForm.Show();
+            var platformAdapters = new DynamicWin.Platform.WindowsPlatformAdapters();
+            runtime = new ApplicationCompositionRoot(platformAdapters, () => UpdateStartup(platformAdapters.StartupShortcuts)).Create(
+                InitializeAudioDevices,
+                ShowMainForm,
+                DisposeMainForm);
+            runtime.Start();
         }
 
         protected override void OnExit(ExitEventArgs e)
         {
             base.OnExit(e);
 
-            SaveManager.SaveAll();
-            HardwareMonitor.Stop();
-
-            MainForm.Instance.DisposeTrayIcon();
-
-            KeyHandler.Stop();
+            runtime?.Dispose();
             GC.KeepAlive(mutex); // Important
+        }
+
+        private static void InitializeAudioDevices()
+        {
+            try
+            {
+                using var deviceEnumerator = new MMDeviceEnumerator();
+                defaultDevice = deviceEnumerator.GetDefaultAudioEndpoint(DataFlow.Render, Role.Multimedia);
+                defaultMicrophone = deviceEnumerator.GetDefaultAudioEndpoint(DataFlow.Capture, Role.Multimedia);
+            }
+            catch
+            {
+                defaultDevice = null;
+                defaultMicrophone = null;
+            }
+        }
+
+        private void ShowMainForm(IApplicationServices services)
+        {
+            mainForm = new MainForm(services);
+            mainForm.Show();
+        }
+
+        private void DisposeMainForm()
+        {
+            RendererMain.Instance?.Destroy();
+            mainForm?.DisposeTrayIcon();
         }
 
         private void CurrentDomain_UnhandledException(object sender, UnhandledExceptionEventArgs e)

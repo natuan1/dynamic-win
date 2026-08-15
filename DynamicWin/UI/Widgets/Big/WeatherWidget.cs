@@ -46,19 +46,19 @@ namespace DynamicWin.UI.Widgets.Big
             public bool useCelcius;
         }
 
-        public void LoadSettings()
+        public void LoadSettings(ISettingsStore settings)
         {
-            if (SaveManager.Contains(SettingID))
-                saveData = JsonConvert.DeserializeObject<WeatherWidgetSaveData>((string)SaveManager.Get(SettingID));
+            if (settings.Contains(SettingID))
+                saveData = JsonConvert.DeserializeObject<WeatherWidgetSaveData>((string)settings.Get(SettingID));
             else
             {
                 saveData = new WeatherWidgetSaveData() { useCelcius = true };
             }
         }
 
-        public void SaveSettings()
+        public void SaveSettings(ISettingsStore settings)
         {
-            SaveManager.Add(SettingID, JsonConvert.SerializeObject(saveData));
+            settings.Set(SettingID, JsonConvert.SerializeObject(saveData));
         }
 
         public List<UIObject> SettingsObjects()
@@ -185,8 +185,8 @@ namespace DynamicWin.UI.Widgets.Big
                 locationTextReplacement.SetActive(RegisterWeatherWidgetSettings.saveData.hideLocation);
                 locationText.SetActive(!RegisterWeatherWidgetSettings.saveData.hideLocation);
 
-                new RegisterWeatherWidgetSettings().SaveSettings();
-                SaveManager.SaveAll();
+                new RegisterWeatherWidgetSettings().SaveSettings(Services.Settings);
+                Services.Settings.Save();
             };
 
             ctx.Items.Add(hideLocationItem);

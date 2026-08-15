@@ -70,7 +70,7 @@ namespace DynamicWin.WPFBinders
 
             // draw on the bitmap
             bitmap.Lock();
-            using (var surface = SKSurface.Create(info, bitmap.BackBuffer, bitmap.BackBufferStride))
+            using (var surface = SkiaRenderSurface.Create(info, bitmap.BackBuffer, bitmap.BackBufferStride))
             {
                 if (IgnorePixelScaling)
                 {
@@ -79,7 +79,7 @@ namespace DynamicWin.WPFBinders
                     canvas.Save();
                 }
 
-                OnPaintSurface(new SKPaintSurfaceEventArgs(surface, info.WithSize(userVisibleSize), info));
+                OnPaintSurface(new SKPaintSurfaceEventArgs(surface.Surface, info.WithSize(userVisibleSize), info));
             }
 
             // draw the bitmap to the screen

@@ -12,11 +12,13 @@ namespace DynamicWin.UI.Menu
     public class BaseMenu : IDisposable
     {
         private List<UIObject> uiObjects = new List<UIObject>();
+        protected IApplicationServices Services { get; }
 
         public List<UIObject> UiObjects { get { return uiObjects; } }
 
         public BaseMenu()
         {
+            Services = RendererMain.Instance.MainIsland.Services;
             uiObjects = InitializeMenu(RendererMain.Instance.MainIsland);
         }
 

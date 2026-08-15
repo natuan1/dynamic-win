@@ -39,11 +39,11 @@ namespace DynamicWin.UI.Widgets.Small
             public float indicatorThreshold;
         }
 
-        public void LoadSettings()
+        public void LoadSettings(ISettingsStore settings)
         {
-            if (SaveManager.Contains(SettingID))
+            if (settings.Contains(SettingID))
             {
-                saveData = JsonConvert.DeserializeObject<UsedDevicesOptionsSave>((string)SaveManager.Get(SettingID));
+                saveData = JsonConvert.DeserializeObject<UsedDevicesOptionsSave>((string)settings.Get(SettingID));
             }
             else
             {
@@ -51,9 +51,9 @@ namespace DynamicWin.UI.Widgets.Small
             }
         }
 
-        public void SaveSettings()
+        public void SaveSettings(ISettingsStore settings)
         {
-            SaveManager.Add(SettingID, JsonConvert.SerializeObject(saveData));
+            settings.Set(SettingID, JsonConvert.SerializeObject(saveData));
         }
 
         public List<UIObject> SettingsObjects()
@@ -160,8 +160,8 @@ namespace DynamicWin.UI.Widgets.Small
             sinCycleCamera += sinSpeed * deltaTime;
             sinCycleMicrophone += sinSpeed * deltaTime;
 
-            bool isCamActive = DynamicWin.Platform.PlatformAdapters.Current.DeviceUsage.IsWebcamInUse();
-            bool isMicActive = DynamicWin.Platform.PlatformAdapters.Current.DeviceUsage.IsMicrophoneInUse();
+            bool isCamActive = Services.Platform.DeviceUsage.IsWebcamInUse();
+            bool isMicActive = Services.Platform.DeviceUsage.IsMicrophoneInUse();
 
             camDotSizeCurrent = Mathf.Lerp(camDotSizeCurrent, isCamActive ? camDotSize : 0f, 5f * deltaTime);
             micDotSizeCurrent = Mathf.Lerp(micDotSizeCurrent, isMicActive ? micDotSize : 0f, 5f * deltaTime);

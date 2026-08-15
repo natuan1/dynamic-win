@@ -21,6 +21,7 @@ namespace DynamicWin.Main
         public static Action<System.Windows.Input.MouseWheelEventArgs> onScrollEvent;
 
         private readonly Forms.NotifyIcon _trayIcon;
+        private readonly IApplicationServices services;
 
         private DateTime _lastRenderTime;
         private readonly TimeSpan _targetElapsedTime = TimeSpan.FromMilliseconds(16); // ~60 FPS
@@ -38,8 +39,9 @@ namespace DynamicWin.Main
         const int WS_EX_TOOLWINDOW = 0x00000080;
         const int WS_EX_APPWINDOW = 0x00040000;
 
-        public MainForm()
+        public MainForm(IApplicationServices services)
         {
+            this.services = services;
             InitializeComponent();
 
             _trayIcon = new Forms.NotifyIcon();
@@ -97,8 +99,7 @@ namespace DynamicWin.Main
 
             _trayIcon.ContextMenuStrip.Items.Add("Exit", null, (x, y) =>
             {
-                SaveManager.SaveAll();
-                Process.GetCurrentProcess().Kill();
+                Application.Current.Shutdown();
             });
 
             _trayIcon.Visible = true;
@@ -156,7 +157,7 @@ namespace DynamicWin.Main
         {
             if (RendererMain.Instance != null) RendererMain.Instance.Destroy();
 
-            var customControl = new RendererMain();
+            var customControl = new RendererMain(services);
             
             var parent = new Grid();
             parent.Children.Add(customControl);

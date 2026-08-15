@@ -72,9 +72,9 @@ namespace DynamicWin.UI.Widgets.Big
             clickScaleMulti = Vec2.one * 1;
             scaleSecondOrder.SetValues(4.5f, 1, 0.1f);
 
-            if(SaveManager.Contains(shortcutSaveId))
+            if(Services.Settings.Contains(shortcutSaveId))
             {
-                savedShortcut = (ShortcutSave)SaveManager.Get(shortcutSaveId);
+                savedShortcut = (ShortcutSave)Services.Settings.Get(shortcutSaveId);
             }
             else
             {
@@ -178,8 +178,8 @@ namespace DynamicWin.UI.Widgets.Big
             {
                 this.savedShortcut = save;
 
-                SaveManager.Add("shortcuts." + saveId, JsonConvert.SerializeObject(save));
-                SaveManager.SaveAll();
+                Services.Settings.Set("shortcuts." + saveId, JsonConvert.SerializeObject(save));
+                Services.Settings.Save();
 
                 UpdateDisplay();
             }
@@ -194,7 +194,7 @@ namespace DynamicWin.UI.Widgets.Big
                 try
                 {
                     const int thumbnailSize = 24;
-                    using var thumbnail = await Task.Run(() => DynamicWin.Platform.PlatformAdapters.Current.FileThumbnails.GetThumbnail(
+                    using var thumbnail = await Task.Run(() => Services.Platform.FileThumbnails.GetThumbnail(
                         savedShortcut.path, thumbnailSize, thumbnailSize, ThumbnailOptions.None));
                     var bitmap = thumbnail.ToSKBitmap();
                     await System.Windows.Application.Current.Dispatcher.InvokeAsync(() =>
@@ -221,8 +221,8 @@ namespace DynamicWin.UI.Widgets.Big
 
         void LoadShortcut()
         {
-            if (!SaveManager.Contains("shortcuts." + saveId)) return;
-            var shortcut = (ShortcutSave)JsonConvert.DeserializeObject<ShortcutSave>((string)SaveManager.Get("shortcuts." + saveId));
+            if (!Services.Settings.Contains("shortcuts." + saveId)) return;
+            var shortcut = (ShortcutSave)JsonConvert.DeserializeObject<ShortcutSave>((string)Services.Settings.Get("shortcuts." + saveId));
 
             if(!string.IsNullOrEmpty(shortcut.path))
             {
@@ -264,9 +264,9 @@ namespace DynamicWin.UI.Widgets.Big
 
         void RemoveShortcut()
         {
-            if (!SaveManager.Contains("shortcuts." + saveId)) return;
-            SaveManager.Remove(("shortcuts." + saveId));
-            SaveManager.SaveAll();
+            if (!Services.Settings.Contains("shortcuts." + saveId)) return;
+            Services.Settings.Remove(("shortcuts." + saveId));
+            Services.Settings.Save();
 
             savedShortcut = new ShortcutSave();
         }
