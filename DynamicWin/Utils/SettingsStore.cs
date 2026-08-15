@@ -16,6 +16,11 @@ public interface ISettingsStore
     void Remove(string key);
 }
 
+public static class SettingsStore
+{
+    public static ISettingsStore Open(string directory, string fileName) => new JsonSettingsStore(directory, fileName);
+}
+
 internal sealed class JsonSettingsStore : ISettingsStore
 {
     private readonly string filePath;

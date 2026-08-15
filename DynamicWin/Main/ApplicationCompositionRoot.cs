@@ -6,17 +6,17 @@ namespace DynamicWin.Main;
 
 internal sealed class ApplicationCompositionRoot(IPlatformAdapters platformAdapters, Action updateStartupShortcut)
 {
-    public ApplicationRuntime Create(
+    public ApplicationLifetime Create(
         Action initializeAudio,
         Action<IApplicationServices> showWindow,
         Action disposeWindow)
     {
         HardwareMonitor? hardwareMonitor = null;
         var settingsDirectory = ApplicationDataPaths.SettingsDirectory;
-        var settingsStore = new JsonSettingsStore(settingsDirectory, "Settings.json");
+        ISettingsStore settingsStore = SettingsStore.Open(settingsDirectory, "Settings.json");
         var services = new ApplicationServices(platformAdapters, settingsStore, settingsDirectory, updateStartupShortcut);
 
-        return new ApplicationRuntime(
+        return new ApplicationLifetime(
             new DelegateApplicationComponent(
                 () =>
                 {
