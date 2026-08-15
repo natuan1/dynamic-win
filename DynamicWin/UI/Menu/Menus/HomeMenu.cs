@@ -25,7 +25,7 @@ namespace DynamicWin.UI.Menu.Menus
 
         public void NextSong()
         {
-            if (RendererMain.Instance.MainIsland.IsHovering) return;
+            if (Runtime.MainIsland.IsHovering) return;
 
             songSizeAddition = 45;
             songLocalPosXAddition = 45;
@@ -33,7 +33,7 @@ namespace DynamicWin.UI.Menu.Menus
 
         public void PrevSong()
         {
-            if (RendererMain.Instance.MainIsland.IsHovering) return;
+            if (Runtime.MainIsland.IsHovering) return;
 
             songSizeAddition = 45;
             songLocalPosXAddition = -45;
@@ -173,7 +173,7 @@ namespace DynamicWin.UI.Menu.Menus
             var settingsButton = new DWImageButton(topContainer, Resources.Res.Settings, new Vec2(-20f, 0), new Vec2(20, 20), () =>
             {
                 //new SettingsWindow();
-                MenuManager.OpenMenu(new SettingsMenu());
+                Runtime.OpenMenu(new SettingsMenu());
             },
             UIAlignment.MiddleRight);
             settingsButton.normalColor = Col.Transparent;
@@ -313,31 +313,31 @@ namespace DynamicWin.UI.Menu.Menus
 
             // Enable / Disable small widgets
 
-            smallLeftWidgets.ForEach(x => x.SetActive(!RendererMain.Instance.MainIsland.IsHovering));
-            smallCenterWidgets.ForEach(x => x.SetActive(!RendererMain.Instance.MainIsland.IsHovering));
-            smallRightWidgets.ForEach(x => x.SetActive(!RendererMain.Instance.MainIsland.IsHovering));
+            smallLeftWidgets.ForEach(x => x.SetActive(!Runtime.MainIsland.IsHovering));
+            smallCenterWidgets.ForEach(x => x.SetActive(!Runtime.MainIsland.IsHovering));
+            smallRightWidgets.ForEach(x => x.SetActive(!Runtime.MainIsland.IsHovering));
 
             // Enable / Disable big widgets / Tray
 
-            tray.SetActive(RendererMain.Instance.MainIsland.IsHovering && !isWidgetMode);
-            bigWidgets.ForEach(x => x.SetActive(RendererMain.Instance.MainIsland.IsHovering && isWidgetMode));
+            tray.SetActive(Runtime.MainIsland.IsHovering && !isWidgetMode);
+            bigWidgets.ForEach(x => x.SetActive(Runtime.MainIsland.IsHovering && isWidgetMode));
             bigMenuItems.ForEach(x =>
             {
                 if(!(x is Tray))
                 {
-                    x.SetActive(RendererMain.Instance.MainIsland.IsHovering);
+                    x.SetActive(Runtime.MainIsland.IsHovering);
                 }
             });
 
-            widgetButton.normalColor = Col.Lerp(widgetButton.normalColor, isWidgetMode ? Col.White.Override(a: 0.075f) : Col.Transparent, 15f * RendererMain.Instance.DeltaTime);
-            trayButton.normalColor = Col.Lerp(trayButton.normalColor, (!isWidgetMode) ? Col.White.Override(a: 0.075f) : Col.Transparent, 15f * RendererMain.Instance.DeltaTime);
-            widgetButton.hoverColor = Col.Lerp(widgetButton.hoverColor, isWidgetMode ? Col.White.Override(a: 0.075f) : Col.Transparent, 15f * RendererMain.Instance.DeltaTime);
-            trayButton.hoverColor = Col.Lerp(trayButton.hoverColor, (!isWidgetMode) ? Col.White.Override(a: 0.075f) : Col.Transparent, 15f * RendererMain.Instance.DeltaTime);
+            widgetButton.normalColor = Col.Lerp(widgetButton.normalColor, isWidgetMode ? Col.White.Override(a: 0.075f) : Col.Transparent, 15f * Runtime.DeltaTime);
+            trayButton.normalColor = Col.Lerp(trayButton.normalColor, (!isWidgetMode) ? Col.White.Override(a: 0.075f) : Col.Transparent, 15f * Runtime.DeltaTime);
+            widgetButton.hoverColor = Col.Lerp(widgetButton.hoverColor, isWidgetMode ? Col.White.Override(a: 0.075f) : Col.Transparent, 15f * Runtime.DeltaTime);
+            trayButton.hoverColor = Col.Lerp(trayButton.hoverColor, (!isWidgetMode) ? Col.White.Override(a: 0.075f) : Col.Transparent, 15f * Runtime.DeltaTime);
 
-            RendererMain.Instance.MainIsland.LocalPosition.X = Mathf.Lerp(RendererMain.Instance.MainIsland.LocalPosition.X,
-                songLocalPosXAddition, 2f * RendererMain.Instance.DeltaTime);
-            songLocalPosXAddition = Mathf.Lerp(songLocalPosXAddition, 0f, 10 * RendererMain.Instance.DeltaTime);
-            songSizeAddition = Mathf.Lerp(songSizeAddition, 0f, 10 * RendererMain.Instance.DeltaTime);
+            Runtime.MainIsland.LocalPosition.X = Mathf.Lerp(Runtime.MainIsland.LocalPosition.X,
+                songLocalPosXAddition, 2f * Runtime.DeltaTime);
+            songLocalPosXAddition = Mathf.Lerp(songLocalPosXAddition, 0f, 10 * Runtime.DeltaTime);
+            songSizeAddition = Mathf.Lerp(songSizeAddition, 0f, 10 * Runtime.DeltaTime);
 
             if(Math.Abs(songLocalPosXAddition) < 5f)
             {
@@ -357,11 +357,11 @@ namespace DynamicWin.UI.Menu.Menus
                     previous.SetActive(true);
             }
 
-            if (!RendererMain.Instance.MainIsland.IsHovering)
+            if (!Runtime.MainIsland.IsHovering)
             {
                 var smallContainerSize = IslandSize() - songSizeAddition;
                 smallContainerSize -= sCD;
-                smallWidgetsContainer.LocalPosition.X = -RendererMain.Instance.MainIsland.LocalPosition.X;
+                smallWidgetsContainer.LocalPosition.X = -Runtime.MainIsland.LocalPosition.X;
                 smallWidgetsContainer.Size = smallContainerSize;
 
                 { // Left Small Widgets
@@ -402,9 +402,9 @@ namespace DynamicWin.UI.Menu.Menus
                     }
                 }
             }
-            else if (RendererMain.Instance.MainIsland.IsHovering)
+            else if (Runtime.MainIsland.IsHovering)
             {
-                topContainer.Size = new Vec2(RendererMain.Instance.MainIsland.currSize.X - 30, 30);
+                topContainer.Size = new Vec2(Runtime.MainIsland.currSize.X - 30, 30);
 
                 var bigContainerSize = IslandSizeBig();
                 bigContainerSize -= bCD;

@@ -19,7 +19,7 @@ namespace DynamicWin.UI.Menu.Menus
 
             var btn = new DWTextButton(island, "Hello", new Vec2(0, 0), new Vec2(125, 25), () =>
             {
-                MenuManager.OpenOverlayMenu(new TestMenu());
+                Runtime.OpenOverlayMenu(new TestMenu());
 
             }, UIAlignment.Center);
 

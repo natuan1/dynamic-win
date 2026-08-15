@@ -11,6 +11,7 @@ namespace DynamicWin.Utils
     {
         public static Theme Instance { get; private set; }
         private readonly string settingsDirectory;
+        private Action? refreshRenderer;
 
         public Theme(string settingsDirectory)
         {
@@ -18,6 +19,11 @@ namespace DynamicWin.Utils
             Instance = this;
 
             UpdateTheme();
+        }
+
+        public void SetRendererRefresh(Action refreshRenderer)
+        {
+            this.refreshRenderer = refreshRenderer;
         }
         
         public void ApplyTheme(ThemeHolder theme)
@@ -138,7 +144,7 @@ namespace DynamicWin.Utils
             }
 
             if (refreshRenderer)
-                MainForm.Instance.AddRenderer();
+                this.refreshRenderer?.Invoke();
         }
 
         ThemeHolder GetTheme(string json)

@@ -47,7 +47,7 @@ namespace DynamicWin
 
 
         Mutex mutex;
-        private ApplicationRuntime? runtime;
+        private ApplicationLifetime? runtime;
         private MainForm? mainForm;
 
         protected override void OnStartup(StartupEventArgs e)
@@ -107,7 +107,6 @@ namespace DynamicWin
 
         private void DisposeMainForm()
         {
-            RendererMain.Instance?.Destroy();
             mainForm?.DisposeTrayIcon();
         }
 

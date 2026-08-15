@@ -9,12 +9,12 @@ public sealed class JsonSettingsStoreTests : IDisposable
     [Fact]
     public void Save_then_load_preserves_values_across_store_instances()
     {
-        var writer = new JsonSettingsStore(directory, "settings.json");
+        var writer = SettingsStore.Open(directory, "settings.json");
         writer.Set("settings.theme", 2);
         writer.Set("settings.widgets", new[] { "clock", "weather" });
         writer.Save();
 
-        var reader = new JsonSettingsStore(directory, "settings.json");
+        var reader = SettingsStore.Open(directory, "settings.json");
         reader.Load();
 
         Assert.Equal(2, reader.Get<int>("settings.theme"));
@@ -24,7 +24,7 @@ public sealed class JsonSettingsStoreTests : IDisposable
     [Fact]
     public void Load_with_no_file_leaves_store_empty()
     {
-        var store = new JsonSettingsStore(directory, "settings.json");
+        var store = SettingsStore.Open(directory, "settings.json");
 
         store.Load();
 

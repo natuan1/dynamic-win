@@ -1,12 +1,12 @@
 namespace DynamicWin.Main;
 
-internal interface IApplicationComponent
+public interface IApplicationComponent
 {
     void Start();
     void Stop();
 }
 
-internal sealed class ApplicationRuntime(params IApplicationComponent[] components) : IDisposable
+public sealed class ApplicationLifetime(params IApplicationComponent[] components) : IDisposable
 {
     private readonly List<IApplicationComponent> startedComponents = [];
     private bool disposed;

@@ -26,7 +26,7 @@ namespace DynamicWin.UI.UIElements
 
         Col borderCol = Col.Transparent;
 
-        public IslandObject(IApplicationServices services) : base(null, Vec2.zero, new Vec2(250, 50), UIAlignment.TopCenter, services)
+        public IslandObject(IUiRuntime runtime) : base(null, Vec2.zero, new Vec2(250, 50), UIAlignment.TopCenter, runtime.Services, runtime)
         {
             currSize = Size;
 
@@ -51,12 +51,12 @@ namespace DynamicWin.UI.UIElements
                 if (IsHovering)
                 {
                     scaleSecondOrder.SetValues(secondOrderValuesExpand[0], secondOrderValuesExpand[1], secondOrderValuesExpand[2]);
-                    currSize = MenuManager.Instance.ActiveMenu.IslandSizeBig();
+                    currSize = Runtime.ActiveMenu.IslandSizeBig();
                 }
                 else
                 {
                     scaleSecondOrder.SetValues(secondOrderValuesContract[0], secondOrderValuesContract[1], secondOrderValuesContract[2]);
-                    currSize = MenuManager.Instance.ActiveMenu.IslandSize();
+                    currSize = Runtime.ActiveMenu.IslandSize();
                 }
 
                 Size = scaleSecondOrder.Update(deltaTime, currSize);
@@ -74,7 +74,7 @@ namespace DynamicWin.UI.UIElements
                 LocalPosition.Y = Mathf.Lerp(LocalPosition.Y, -Size.Y / 1.5f, 25f * deltaTime);
             }
 
-            MainForm.Instance.Opacity = hidden ? 0.85f : 1f;
+            Runtime.SetOverlayOpacity(hidden ? 0.85f : 1f);
 
             mode = Settings.IslandMode;
 
@@ -83,7 +83,7 @@ namespace DynamicWin.UI.UIElements
             dropShadowStrength = Mathf.Lerp(dropShadowStrength, IsHovering ? 0.75f : 0.25f, 10f * deltaTime);
             dropShadowSize = Mathf.Lerp(dropShadowSize, IsHovering ? 35f : 7.5f, 10f * deltaTime);
 
-            borderCol = Col.Lerp(borderCol, MenuManager.Instance.ActiveMenu.IslandBorderColor(), 10f  * deltaTime);
+            borderCol = Col.Lerp(borderCol, Runtime.ActiveMenu.IslandBorderColor(), 10f  * deltaTime);
         }
 
         public override void Draw(SKCanvas canvas)

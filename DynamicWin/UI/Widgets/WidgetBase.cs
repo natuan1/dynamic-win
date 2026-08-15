@@ -79,7 +79,7 @@ namespace DynamicWin.UI.Widgets
         {
             Size = GetWidgetSize();
 
-            hoverProgress = Mathf.Lerp(hoverProgress, IsHovering ? 1f : 0f, 10f * RendererMain.Instance.DeltaTime);
+            hoverProgress = Mathf.Lerp(hoverProgress, IsHovering ? 1f : 0f, 10f * Runtime.DeltaTime);
 
             if(hoverProgress > 0.025f)
             {
@@ -120,7 +120,8 @@ namespace DynamicWin.UI.Widgets
 
                 int canvasSave = canvas.Save();
                 canvas.ClipRoundRect(GetRect(), antialias: true);
-                canvas.DrawCircle(RendererMain.CursorPosition.X + 12.5f, RendererMain.CursorPosition.Y + 20, 35, bPaint);
+                var cursorPosition = Runtime.CursorPosition;
+                canvas.DrawCircle(cursorPosition.X + 12.5f, cursorPosition.Y + 20, 35, bPaint);
 
                 canvas.RestoreToCount(canvasSave);
             }*/
@@ -139,9 +140,6 @@ namespace DynamicWin.UI.Widgets
                 var broundRect = new SKRoundRect(brect, roundRadius);
 
                 int noClip = canvas.Save();
-
-                //if(!RendererMain.Instance.MainIsland.IsHovering)
-                //    canvas.ClipRect(clipRect, SKClipOperation.Difference);
 
                 paint.Color = SKColors.DimGray;
                 canvas.DrawRoundRect(broundRect, paint);

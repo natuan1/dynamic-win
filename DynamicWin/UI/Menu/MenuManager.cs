@@ -6,33 +6,33 @@ using System.Collections.Generic;
 
 namespace DynamicWin.UI.Menu
 {
-    public class MenuManager
+    public class MenuManager : IDisposable
     {
         private readonly IRenderState renderState;
+        private readonly IUiRuntime runtime;
         private BaseMenu activeMenu;
         public BaseMenu ActiveMenu { get => activeMenu; }
-
-        private static MenuManager instance;
-        public static MenuManager Instance { get => instance; }
 
         public Action<BaseMenu, BaseMenu> onMenuChange;
         public Action<BaseMenu> onMenuChangeEnd;
 
-        internal MenuManager(IRenderState renderState)
+        internal MenuManager(IRenderState renderState, IUiRuntime runtime)
         {
             this.renderState = renderState;
-            instance = this;
+            this.runtime = runtime;
         }
 
         public void Init()
         {
             Resources.Res.CreateStaticMenus();
             activeMenu = Resources.Res.HomeMenu;
+            activeMenu.Attach(runtime, runtime.MainIsland);
+            activeMenu.OnLoad();
         }
 
-        public static void OpenMenu(BaseMenu newActiveMenu)
+        public void OpenMenu(BaseMenu newActiveMenu)
         {
-            Instance.Open(newActiveMenu);
+            Open(newActiveMenu);
         }
 
         private void Open(BaseMenu newActiveMenu)
@@ -40,18 +40,18 @@ namespace DynamicWin.UI.Menu
             SetActiveMenu(newActiveMenu);
         }
 
-        public static void OpenOverlayMenu(BaseMenu newActiveMenu, float time = 5f)
+        public void OpenOverlayMenu(BaseMenu newActiveMenu, float time = 5f)
         {
-            Instance.OpenOverlay(newActiveMenu, time);
+            OpenOverlay(newActiveMenu, time);
         }
 
         private BaseMenu? overlayReturnMenu;
         private DateTime overlayDeadlineUtc;
         private bool overlayIsOpen;
 
-        public static void CloseOverlay()
+        public void CloseOverlay()
         {
-            Instance.CloseOverlayInternal();
+            CloseOverlayInternal();
         }
 
         private void OpenOverlay(BaseMenu newActiveMenu, float time)
@@ -96,7 +96,9 @@ namespace DynamicWin.UI.Menu
             renderState.BlurOverride = 35f;
 
             if (activeMenu != null) activeMenu.OnDeload();
+            newActiveMenu.Attach(runtime, runtime.MainIsland);
             activeMenu = newActiveMenu;
+            activeMenu.OnLoad();
 
             menuAnimatorOut.onAnimationUpdate += (t) =>
             {
@@ -152,6 +154,15 @@ namespace DynamicWin.UI.Menu
             {
                 menuLoadQueue.Add(menu);
             }
+        }
+
+        public void Dispose()
+        {
+            activeMenu?.OnDeload();
+            activeMenu?.Dispose();
+            overlayReturnMenu?.Dispose();
+            menuLoadQueue.ForEach(menu => menu.Dispose());
+            menuLoadQueue.Clear();
         }
     }
 }
