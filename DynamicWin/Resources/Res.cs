@@ -9,9 +9,9 @@ namespace DynamicWin.Resources
 {
     public class Res
     {
-        public static SKTypeface InterRegular { get => LoadTypeface("Resources\\Inter_24pt-Regular.ttf"); }
-        public static SKTypeface InterBold { get => LoadTypeface("Resources\\Inter_24pt-ExtraBold.ttf"); }
-        public static SKTypeface CascadiaMono { get => LoadTypeface("Resources\\CascadiaMono.ttf"); }
+        public static SKTypeface InterRegular { get => LoadTypeface(GetPath("Inter_24pt-Regular.ttf")); }
+        public static SKTypeface InterBold { get => LoadTypeface(GetPath("Inter_24pt-ExtraBold.ttf")); }
+        public static SKTypeface CascadiaMono { get => LoadTypeface(GetPath("CascadiaMono.ttf")); }
 
         public static SKBitmap searchIcon;
         public static SKBitmap editIcon;
@@ -61,7 +61,7 @@ namespace DynamicWin.Resources
         public static SKBitmap Snowy;
         public static SKBitmap SevereWeatherWarning;
 
-        public static string TimerOverSound = "Resources\\sounds\\TimerOver.wav";
+        public static string TimerOverSound = GetPath("sounds", "TimerOver.wav");
 
         private static HomeMenu homeMenu;
         public static HomeMenu HomeMenu { get => homeMenu; set => homeMenu = value; }
@@ -200,7 +200,7 @@ namespace DynamicWin.Resources
         {
             try
             {
-                using (var stream = File.OpenRead("Resources\\icons\\" + path))
+                using (var stream = File.OpenRead(GetPath("icons", path)))
                 {
                     var image = SKImage.FromEncodedData(stream);
                     return SKBitmap.FromImage(image);
@@ -224,5 +224,8 @@ namespace DynamicWin.Resources
                 return InterRegular;
             }
         }
+
+        public static string GetPath(params string[] relativeParts) =>
+            Path.Combine([AppContext.BaseDirectory, "Resources", .. relativeParts]);
     }
 }

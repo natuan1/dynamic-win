@@ -29,8 +29,16 @@ namespace DynamicWin.Main
         {
             get
             {
-                var pos = Mouse.GetPosition(window);
-                return new Vec2(pos.X, pos.Y);
+                var screenPosition = System.Windows.Forms.Cursor.Position;
+                var presentationSource = System.Windows.PresentationSource.FromVisual(window);
+                if (presentationSource?.CompositionTarget is null)
+                    return Vec2.zero;
+
+                var screenPositionInDips = presentationSource.CompositionTarget.TransformFromDevice.Transform(
+                    new System.Windows.Point(screenPosition.X, screenPosition.Y));
+                return new Vec2(
+                    screenPositionInDips.X - window.Left,
+                    screenPositionInDips.Y - window.Top);
             }
         }
 
@@ -80,7 +88,12 @@ namespace DynamicWin.Main
         public void QueueOpenMenu(BaseMenu menu) => Menus.QueueOpenMenu(menu);
         public void SetMonitor(int monitorIndex) => window.SetMonitor(monitorIndex);
         public int GetMonitorCount() => MainForm.GetMonitorCount();
-        public void RestartRenderer() => window.AddRenderer();
+        public void RestartRenderer()
+        {
+            window.Dispatcher.BeginInvoke(
+                System.Windows.Threading.DispatcherPriority.Background,
+                new Action(window.AddRenderer));
+        }
         public void StartDrag(string[] files, Action callback) => window.StartDrag(files, callback);
         public void SetOverlayOpacity(double opacity) => window.Opacity = opacity;
     }

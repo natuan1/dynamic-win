@@ -80,7 +80,7 @@ namespace DynamicWin.Main
 
             // Tray icon
 
-            _trayIcon.Icon = new System.Drawing.Icon("Resources/icons/TrayIcon.ico");
+            _trayIcon.Icon = new System.Drawing.Icon(Res.GetPath("icons", "TrayIcon.ico"));
             _trayIcon.Text = "DynamicWin";
 
             _trayIcon.ContextMenuStrip = new Forms.ContextMenuStrip();
@@ -145,7 +145,6 @@ namespace DynamicWin.Main
         }
 
         public bool isDragging = false;
-
         public void OnScroll(object? sender, System.Windows.Input.MouseWheelEventArgs e)
         {
             runtime.OnScroll(e);
