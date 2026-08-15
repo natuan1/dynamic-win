@@ -17,7 +17,15 @@ namespace DynamicWin.UI
     public class UIObject
     {
         private UIObject? parent;
-        public UIObject? Parent { get { return parent; } set { parent = value; } }
+        public UIObject? Parent
+        {
+            get { return parent; }
+            set
+            {
+                parent = value;
+                AttachRuntimeEventsIfAvailable();
+            }
+        }
         private readonly IApplicationServices? services;
         private readonly IUiRuntime? runtime;
 
@@ -25,7 +33,8 @@ namespace DynamicWin.UI
             ?? throw new InvalidOperationException("UI objects must be attached to an application service scope.");
         protected internal IUiRuntime Runtime => runtime ?? parent?.Runtime
             ?? throw new InvalidOperationException("UI objects must be attached to a UI runtime.");
-        private IUiRuntime? TryRuntime => runtime ?? parent?.Runtime;
+        private IUiRuntime? TryRuntime => runtime ?? parent?.TryRuntime;
+        private bool subscribedToRuntimeEvents;
 
         private Vec2 position = Vec2.zero;
         private Vec2 localPosition = Vec2.zero;
@@ -92,11 +101,19 @@ namespace DynamicWin.UI
 
             this.contextMenu = CreateContextMenu();
 
-            if (TryRuntime != null)
-            {
-                Runtime.ContextMenuOpening += CtxOpen;
-                Runtime.ContextMenuClosing += CtxClose;
-            }
+            AttachRuntimeEventsIfAvailable();
+        }
+
+        private void AttachRuntimeEventsIfAvailable()
+        {
+            if (subscribedToRuntimeEvents || TryRuntime is not { } currentRuntime)
+                return;
+
+            currentRuntime.ContextMenuOpening += CtxOpen;
+            currentRuntime.ContextMenuClosing += CtxClose;
+            subscribedToRuntimeEvents = true;
+
+            localObjects.ForEach(obj => obj.AttachRuntimeEventsIfAvailable());
         }
 
         void CtxOpen(object sender, ContextMenuEventArgs e)
@@ -246,10 +263,11 @@ namespace DynamicWin.UI
                 obj.DestroyCall();
             });
 
-            if (TryRuntime != null)
+            if (subscribedToRuntimeEvents && TryRuntime is { } currentRuntime)
             {
-                Runtime.ContextMenuOpening -= CtxOpen;
-                Runtime.ContextMenuClosing -= CtxClose;
+                currentRuntime.ContextMenuOpening -= CtxOpen;
+                currentRuntime.ContextMenuClosing -= CtxClose;
+                subscribedToRuntimeEvents = false;
             }
             OnDestroy();
         }
