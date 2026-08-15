@@ -93,7 +93,7 @@ namespace DynamicWin.UI.UIElements.Custom
                 {
                     const int thumbnailSize = 64;
                     using var loadedThumbnail = await Task.Run(
-                        () => DynamicWin.Platform.PlatformAdapters.Current.FileThumbnails.GetThumbnail(
+                        () => Services.Platform.FileThumbnails.GetThumbnail(
                             file, thumbnailSize, thumbnailSize, ThumbnailOptions.None),
                         cancellationToken);
                     var bitmap = loadedThumbnail.ToSKBitmap();

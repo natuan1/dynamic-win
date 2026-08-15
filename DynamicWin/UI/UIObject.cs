@@ -18,6 +18,10 @@ namespace DynamicWin.UI
     {
         private UIObject? parent;
         public UIObject? Parent { get { return parent; } set { parent = value; } }
+        private readonly IApplicationServices? services;
+
+        protected internal IApplicationServices Services => services ?? parent?.Services
+            ?? throw new InvalidOperationException("UI objects must be attached to an application service scope.");
 
         private Vec2 position = Vec2.zero;
         private Vec2 localPosition = Vec2.zero;
@@ -73,9 +77,10 @@ namespace DynamicWin.UI
             localObjects.Remove(obj);
         }
 
-        public UIObject(UIObject? parent, Vec2 position, Vec2 size, UIAlignment alignment = UIAlignment.TopCenter)
+        public UIObject(UIObject? parent, Vec2 position, Vec2 size, UIAlignment alignment = UIAlignment.TopCenter, IApplicationServices? services = null)
         {
             this.parent = parent;
+            this.services = services;
             this.position = position;
             this.size = size;
             this.alignment = alignment;

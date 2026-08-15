@@ -26,7 +26,7 @@ namespace DynamicWin.UI.UIElements
 
         Col borderCol = Col.Transparent;
 
-        public IslandObject() : base(null, Vec2.zero, new Vec2(250, 50), UIAlignment.TopCenter)
+        public IslandObject(IApplicationServices services) : base(null, Vec2.zero, new Vec2(250, 50), UIAlignment.TopCenter, services)
         {
             currSize = Size;
 

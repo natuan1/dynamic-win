@@ -44,7 +44,7 @@ namespace DynamicWin.UI.Widgets.Big
 
         public MediaWidget(UIObject? parent, Vec2 position, UIAlignment alignment = UIAlignment.TopCenter, DynamicWin.Platform.IMediaTransport? mediaTransport = null) : base(parent, position, alignment)
         {
-            controller = mediaTransport ?? DynamicWin.Platform.PlatformAdapters.Current.Media;
+            controller = mediaTransport ?? Services.Platform.Media;
             InitMediaPlayer();
 
             playPause = new DWImageButton(this, Resources.Res.PlayPause, new Vec2(0, 25), new Vec2(30, 30), () =>

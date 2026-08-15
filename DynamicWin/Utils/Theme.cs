@@ -10,9 +10,11 @@ namespace DynamicWin.Utils
     public class Theme
     {
         public static Theme Instance { get; private set; }
+        private readonly string settingsDirectory;
 
-        public Theme()
+        public Theme(string settingsDirectory)
         {
+            this.settingsDirectory = settingsDirectory;
             Instance = this;
 
             UpdateTheme();
@@ -99,7 +101,7 @@ namespace DynamicWin.Utils
             {
                 string defaultTheme = "{\r\n  \"IslandColor\": \"#000000\",\r\n  \"TextMain\": \"#dd11dd\",\r\n  \"TextSecond\": \"#aa11aa\",\r\n  \"TextThird\": \"#661166\",\r\n  \"Primary\": \"#dd11dd\",\r\n  \"Secondary\": \"#111111\",\r\n  \"Success\": \"#991199\",\r\n  \"Error\": \"#3311933\",\r\n  \"IconColor\": \"#dd11dd\",\r\n  \"WidgetBackground\": \"#11ffffff\"\r\n}";
 
-                var directory = SaveManager.SavePath;
+                var directory = settingsDirectory;
                 var fileName = "Theme.json";
 
                 if (!Directory.Exists(directory)) Directory.CreateDirectory(directory);

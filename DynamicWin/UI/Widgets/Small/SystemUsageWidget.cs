@@ -54,7 +54,7 @@ namespace DynamicWin.UI.Widgets.Small
 
         string GetUsage()
         {
-            return DynamicWin.Platform.PlatformAdapters.Current.HardwareUsage.CurrentUsage;
+            return Services.Platform.HardwareUsage.CurrentUsage;
         }
 
         protected override float GetWidgetWidth()

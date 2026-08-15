@@ -39,11 +39,11 @@ namespace DynamicWin.UI.Widgets.Small
             public bool militaryTime;
         }
 
-        public void LoadSettings()
+        public void LoadSettings(ISettingsStore settings)
         {
-            if (SaveManager.Contains(SettingID))
+            if (settings.Contains(SettingID))
             {
-                saveData = JsonConvert.DeserializeObject<TimeWidgetSave>((string)SaveManager.Get(SettingID));
+                saveData = JsonConvert.DeserializeObject<TimeWidgetSave>((string)settings.Get(SettingID));
             }
             else
             {
@@ -51,9 +51,9 @@ namespace DynamicWin.UI.Widgets.Small
             }
         }
 
-        public void SaveSettings()
+        public void SaveSettings(ISettingsStore settings)
         {
-            SaveManager.Add(SettingID, JsonConvert.SerializeObject(saveData));
+            settings.Set(SettingID, JsonConvert.SerializeObject(saveData));
         }
 
         public List<UIObject> SettingsObjects()

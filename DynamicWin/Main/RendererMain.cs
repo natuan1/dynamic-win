@@ -50,11 +50,11 @@ namespace DynamicWin.Main
         public int canvasWithoutClip;
         private GRContext Context;
 
-        public RendererMain()
+        public RendererMain(IApplicationServices services)
         {
             MenuManager m = new MenuManager(this);
             instance = this;
-            islandObject = new IslandObject();
+            islandObject = new IslandObject(services);
             m.Init();
 
             initialScreenBrightness = BrightnessAdjustMenu.GetBrightness();

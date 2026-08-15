@@ -4,39 +4,39 @@ using DynamicWin.Utils;
 
 namespace DynamicWin.Main;
 
-internal sealed class ApplicationCompositionRoot(IPlatformAdapters platformAdapters)
+internal sealed class ApplicationCompositionRoot(IPlatformAdapters platformAdapters, Action updateStartupShortcut)
 {
     public ApplicationRuntime Create(
         Action initializeAudio,
-        Action updateStartupShortcut,
-        Action showWindow,
+        Action<IApplicationServices> showWindow,
         Action disposeWindow)
     {
         HardwareMonitor? hardwareMonitor = null;
+        var settingsDirectory = ApplicationDataPaths.SettingsDirectory;
+        var settingsStore = new JsonSettingsStore(settingsDirectory, "Settings.json");
+        var services = new ApplicationServices(platformAdapters, settingsStore, settingsDirectory, updateStartupShortcut);
 
         return new ApplicationRuntime(
             new DelegateApplicationComponent(
                 () =>
                 {
-                    PlatformAdapters.Configure(platformAdapters);
-                    SaveManager.Configure(new JsonSettingsStore(SaveManager.SavePath, "Settings.json"));
-                    SaveManager.LoadData();
+                    settingsStore.Load();
                 },
-                SaveManager.SaveAll),
+                settingsStore.Save),
             new DelegateApplicationComponent(
                 () =>
                 {
-                    Res.Load();
-                    _ = new Theme();
+                    Res.Load(settingsDirectory);
+                    _ = new Theme(settingsDirectory);
                 },
                 () => { }),
-            new DelegateApplicationComponent(Settings.InitializeSettings, Settings.Save),
+            new DelegateApplicationComponent(() => Settings.InitializeSettings(settingsStore), () => Settings.Save(settingsStore)),
             new DelegateApplicationComponent(initializeAudio, () => { }),
             new DelegateApplicationComponent(KeyHandler.Start, KeyHandler.Stop),
             new DelegateApplicationComponent(
                 () => hardwareMonitor = new HardwareMonitor(),
                 () => hardwareMonitor?.Dispose()),
-            new DelegateApplicationComponent(updateStartupShortcut, () => { }),
-            new DelegateApplicationComponent(showWindow, disposeWindow));
+            new DelegateApplicationComponent(services.UpdateStartupShortcut, () => { }),
+            new DelegateApplicationComponent(() => showWindow(services), disposeWindow));
     }
 }

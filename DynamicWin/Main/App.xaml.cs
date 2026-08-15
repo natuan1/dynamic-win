@@ -25,17 +25,17 @@ namespace DynamicWin
             m.Run();
         }
 
-        public static void UpdateStartup()
+        private static void UpdateStartup(DynamicWin.Platform.IStartupShortcutAdapter startupShortcuts)
         {
             try
             {
                 if (Settings.RunOnStartup)
                 {
-                    DynamicWin.Platform.PlatformAdapters.Current.StartupShortcuts.CreateShortcut();
+                    startupShortcuts.CreateShortcut();
                 }
                 else
                 {
-                    DynamicWin.Platform.PlatformAdapters.Current.StartupShortcuts.RemoveShortcut();
+                    startupShortcuts.RemoveShortcut();
                 }
             }
             catch (Exception ex)
@@ -68,9 +68,9 @@ namespace DynamicWin
                 return;
             }
 
-            runtime = new ApplicationCompositionRoot(new DynamicWin.Platform.WindowsPlatformAdapters()).Create(
+            var platformAdapters = new DynamicWin.Platform.WindowsPlatformAdapters();
+            runtime = new ApplicationCompositionRoot(platformAdapters, () => UpdateStartup(platformAdapters.StartupShortcuts)).Create(
                 InitializeAudioDevices,
-                UpdateStartup,
                 ShowMainForm,
                 DisposeMainForm);
             runtime.Start();
@@ -99,9 +99,9 @@ namespace DynamicWin
             }
         }
 
-        private void ShowMainForm()
+        private void ShowMainForm(IApplicationServices services)
         {
-            mainForm = new MainForm();
+            mainForm = new MainForm(services);
             mainForm.Show();
         }
 

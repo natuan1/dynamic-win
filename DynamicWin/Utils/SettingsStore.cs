@@ -5,7 +5,7 @@ using System.IO;
 
 namespace DynamicWin.Utils;
 
-internal interface ISettingsStore
+public interface ISettingsStore
 {
     void Load();
     void Save();

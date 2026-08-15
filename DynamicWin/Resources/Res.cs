@@ -76,7 +76,7 @@ namespace DynamicWin.Resources
             homeMenu = new HomeMenu();
         }
 
-        public static void Load()
+        public static void Load(string settingsDirectory)
         {
             editIcon = LoadImg("edit.png");
             searchIcon = LoadImg("search.png");
@@ -125,13 +125,13 @@ namespace DynamicWin.Resources
             Snowy = LoadImg("weather\\Snowy.png");
             SevereWeatherWarning = LoadImg("weather\\SevereWeatherWarning.png");
 
-            RegisterWidgets();
+            RegisterWidgets(settingsDirectory);
 
             // Loaded
             System.Diagnostics.Debug.WriteLine("Loaded Resources");
         }
 
-        private static void RegisterWidgets()
+        private static void RegisterWidgets(string settingsDirectory)
         {
             availableBigWidgets = new List<IRegisterableWidget>();
             availableSmallWidgets = new List<IRegisterableWidget>();
@@ -155,7 +155,7 @@ namespace DynamicWin.Resources
 
             // Loading in custom DLLs
 
-            var dirPath = Path.Combine(SaveManager.SavePath, "Extensions");
+            var dirPath = Path.Combine(settingsDirectory, "Extensions");
 
             if (!Directory.Exists(dirPath))
             {

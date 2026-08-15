@@ -64,7 +64,7 @@ namespace DynamicWin.UI.Menu.Menus
 
             timerUntilClose += RendererMain.Instance.DeltaTime;
 
-            this.brightness.value = (float)DynamicWin.Platform.PlatformAdapters.Current.Brightness.Get() / 100f;
+            this.brightness.value = (float)Services.Platform.Brightness.Get() / 100f;
 
             var volXOffset = KeyHandler.keyDown.Contains(System.Windows.Forms.Keys.VolumeUp) ? 2f :
                 KeyHandler.keyDown.Contains(System.Windows.Forms.Keys.VolumeDown) ? -2f : 0;
@@ -85,7 +85,7 @@ namespace DynamicWin.UI.Menu.Menus
 
         internal static int GetBrightness()
         {
-            return DynamicWin.Platform.PlatformAdapters.Current.Brightness.Get();
+            return RendererMain.Instance.MainIsland.Services.Platform.Brightness.Get();
         }
 
         public override Col IslandBorderColor()

@@ -51,7 +51,7 @@ namespace DynamicWin.UI.Menu.Menus
             Settings.AntiAliasing = antiAliasing.IsChecked;
             Settings.RunOnStartup = runOnStartup.IsChecked;
 
-            DynamicWinMain.UpdateStartup();
+            Services.UpdateStartupShortcut();
 
             if (changedTheme)
                 Theme.Instance.UpdateTheme(true);
@@ -63,10 +63,10 @@ namespace DynamicWin.UI.Menu.Menus
 
             foreach (var item in customOptions)
             {
-                item.SaveSettings();
+                item.SaveSettings(Services.Settings);
             }
 
-            Settings.Save();
+            Settings.Save(Services.Settings);
         }
 
         Checkbox allowBlur;
@@ -82,7 +82,7 @@ namespace DynamicWin.UI.Menu.Menus
 
             foreach (var item in customOptions)
             {
-                item.LoadSettings();
+                item.LoadSettings(Services.Settings);
             }
 
             var generalTitle = new DWText(island, "General", new Vec2(25, 0), UIAlignment.TopLeft);
@@ -375,7 +375,7 @@ namespace DynamicWin.UI.Menu.Menus
 
             // Loading in custom DLLs
 
-            var dirPath = Path.Combine(SaveManager.SavePath, "Extensions");
+            var dirPath = Path.Combine(ApplicationDataPaths.SettingsDirectory, "Extensions");
 
             if (!Directory.Exists(dirPath))
             {
