@@ -39,7 +39,7 @@ namespace DynamicWin.UI.UIElements
 
         public override void Draw(SKCanvas canvas)
         {
-            var paint = GetPaint();
+            using var paint = GetPaint();
             paint.Color = Color.Value();
             using var skFont = new SKFont(font, textSize);
 
@@ -50,7 +50,7 @@ namespace DynamicWin.UI.UIElements
             var fontMetrics = skFont.Metrics;
             Size.Y = fontMetrics.Descent + fontMetrics.Ascent;
 
-            SKTextBlob blob = SKTextBlob.Create(text, skFont);
+            using var blob = SKTextBlob.Create(text, skFont);
 
             if (blob != null)
             {
@@ -65,7 +65,8 @@ namespace DynamicWin.UI.UIElements
 
         public Vec2 GetBoundsForString(string text)
         {
-            SKTextBlob blob = SKTextBlob.Create(text, new SKFont(Font, textSize));
+            using var skFont = new SKFont(Font, textSize);
+            using var blob = SKTextBlob.Create(text, skFont);
 
             return new Vec2(blob.Bounds.Width, blob.Bounds.Height);
         }

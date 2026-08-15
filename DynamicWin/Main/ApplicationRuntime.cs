@@ -41,10 +41,23 @@ internal sealed class ApplicationRuntime(params IApplicationComponent[] componen
 
     private void StopStartedComponents()
     {
+        List<Exception>? exceptions = null;
         for (var index = startedComponents.Count - 1; index >= 0; index--)
-            startedComponents[index].Stop();
+        {
+            try
+            {
+                startedComponents[index].Stop();
+            }
+            catch (Exception exception)
+            {
+                (exceptions ??= []).Add(exception);
+            }
+        }
 
         startedComponents.Clear();
+
+        if (exceptions is not null)
+            throw new AggregateException(exceptions);
     }
 }
 

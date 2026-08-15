@@ -32,7 +32,24 @@ public class ApplicationRuntimeTests
         Assert.Equal(["start:settings", "start:input", "stop:settings"], calls);
     }
 
-    private sealed class RecordingComponent(string name, List<string> calls, bool throwsOnStart = false) : IApplicationComponent
+    [Fact]
+    public void Dispose_stops_every_started_component_when_one_stop_fails()
+    {
+        var calls = new List<string>();
+        var runtime = new ApplicationRuntime(
+            new RecordingComponent("settings", calls),
+            new RecordingComponent("input", calls, throwsOnStop: true),
+            new RecordingComponent("window", calls));
+        runtime.Start();
+
+        Assert.Throws<AggregateException>(runtime.Dispose);
+
+        Assert.Equal(
+            ["start:settings", "start:input", "start:window", "stop:window", "stop:input", "stop:settings"],
+            calls);
+    }
+
+    private sealed class RecordingComponent(string name, List<string> calls, bool throwsOnStart = false, bool throwsOnStop = false) : IApplicationComponent
     {
         public void Start()
         {
@@ -41,6 +58,11 @@ public class ApplicationRuntimeTests
                 throw new InvalidOperationException();
         }
 
-        public void Stop() => calls.Add($"stop:{name}");
+        public void Stop()
+        {
+            calls.Add($"stop:{name}");
+            if (throwsOnStop)
+                throw new InvalidOperationException();
+        }
     }
 }
