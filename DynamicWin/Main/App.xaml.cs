@@ -47,6 +47,8 @@ namespace DynamicWin
 
 
         Mutex mutex;
+        private ApplicationRuntime? runtime;
+        private MainForm? mainForm;
 
         protected override void OnStartup(StartupEventArgs e)
         {
@@ -66,45 +68,47 @@ namespace DynamicWin
                 return;
             }
 
-            //SetHighPriority();
-
-            try
-            {
-                var devEnum = new MMDeviceEnumerator();
-                defaultDevice = devEnum.GetDefaultAudioEndpoint(DataFlow.Render, Role.Multimedia);
-                defaultMicrophone = devEnum.GetDefaultAudioEndpoint(DataFlow.Capture, Role.Multimedia);
-            }catch(Exception exception)
-            {
-                defaultDevice = null;
-                defaultMicrophone = null;
-            }
-
-            SaveManager.LoadData();
-
-            Res.Load();
-            KeyHandler.Start();
-            new Theme();
-
-            new HardwareMonitor();
-
-            Settings.InitializeSettings();
-            UpdateStartup();
-
-            MainForm mainForm = new MainForm();
-            mainForm.Show();
+            runtime = new ApplicationCompositionRoot(new DynamicWin.Platform.WindowsPlatformAdapters()).Create(
+                InitializeAudioDevices,
+                UpdateStartup,
+                ShowMainForm,
+                DisposeMainForm);
+            runtime.Start();
         }
 
         protected override void OnExit(ExitEventArgs e)
         {
             base.OnExit(e);
 
-            SaveManager.SaveAll();
-            HardwareMonitor.Stop();
-
-            MainForm.Instance.DisposeTrayIcon();
-
-            KeyHandler.Stop();
+            runtime?.Dispose();
             GC.KeepAlive(mutex); // Important
+        }
+
+        private static void InitializeAudioDevices()
+        {
+            try
+            {
+                using var deviceEnumerator = new MMDeviceEnumerator();
+                defaultDevice = deviceEnumerator.GetDefaultAudioEndpoint(DataFlow.Render, Role.Multimedia);
+                defaultMicrophone = deviceEnumerator.GetDefaultAudioEndpoint(DataFlow.Capture, Role.Multimedia);
+            }
+            catch
+            {
+                defaultDevice = null;
+                defaultMicrophone = null;
+            }
+        }
+
+        private void ShowMainForm()
+        {
+            mainForm = new MainForm();
+            mainForm.Show();
+        }
+
+        private void DisposeMainForm()
+        {
+            RendererMain.Instance?.Destroy();
+            mainForm?.DisposeTrayIcon();
         }
 
         private void CurrentDomain_UnhandledException(object sender, UnhandledExceptionEventArgs e)

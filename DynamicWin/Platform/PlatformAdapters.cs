@@ -23,7 +23,15 @@ internal interface IPlatformAdapters
 
 internal static class PlatformAdapters
 {
-    public static IPlatformAdapters Current { get; set; } = new WindowsPlatformAdapters();
+    private static IPlatformAdapters current = new WindowsPlatformAdapters();
+
+    public static IPlatformAdapters Current => current;
+
+    internal static void Configure(IPlatformAdapters adapters)
+    {
+        ArgumentNullException.ThrowIfNull(adapters);
+        current = adapters;
+    }
 }
 
 internal sealed class WindowsPlatformAdapters : IPlatformAdapters
