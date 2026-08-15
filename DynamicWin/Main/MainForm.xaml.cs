@@ -92,7 +92,7 @@ namespace DynamicWin.Main
 
             _trayIcon.ContextMenuStrip.Items.Add("Settings", null, (x, y) =>
             {
-                runtime.OpenMenu(new SettingsMenu());
+                OpenSettingsMenu();
             });
 
             _trayIcon.ContextMenuStrip.Items.Add("Exit", null, (x, y) =>
@@ -163,6 +163,11 @@ namespace DynamicWin.Main
             parent.Children.Add(customControl);
 
             this.Content = parent;
+        }
+
+        public void OpenSettingsMenu()
+        {
+            runtime.OpenMenu(new SettingsMenu());
         }
 
         public void MainForm_DragEnter(object? sender, DragEventArgs e)
