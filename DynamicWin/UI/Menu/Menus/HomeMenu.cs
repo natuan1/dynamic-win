@@ -96,7 +96,7 @@ namespace DynamicWin.UI.Menu.Menus
             }
 
             if (mode != HomeMode.Widgets) size.Y = 250;
-            if (mode == HomeMode.LocalSend) size.Y += localSendStripHeight;
+            if (mode == HomeMode.LocalSend) size.Y += LocalSendPanel.RequiredStripHeight();
 
             return size;
         }
@@ -114,8 +114,6 @@ namespace DynamicWin.UI.Menu.Menus
         Tray tray;
         DWTextImageButton localSendButton;
         LocalSendPanel localSendPanel;
-
-        const float localSendStripHeight = 100f;
 
         public override List<UIObject> InitializeMenu(IslandObject island)
         {
@@ -212,7 +210,7 @@ namespace DynamicWin.UI.Menu.Menus
             tray.SilentSetActive(false);
             bigMenuItems.Add(tray);
 
-            localSendPanel = new LocalSendPanel(island, tray, new Vec2(0, -topSpacing * 1.5f), Vec2.zero, UIAlignment.BottomCenter)
+            localSendPanel = new LocalSendPanel(island, tray, Vec2.zero, Vec2.zero, UIAlignment.BottomCenter)
             {
                 Anchor = new Vec2(0.5f, 1f)
             };
@@ -334,9 +332,10 @@ namespace DynamicWin.UI.Menu.Menus
         {
             bool isLocalSend = mode == HomeMode.LocalSend;
 
-            tray.Size = new Vec2(topContainer.Size.X, IslandSizeBig().Y - bCD - topSpacing - topContainer.Size.Y / 2 - (isLocalSend ? localSendStripHeight + 14f : 0f));
-            localSendPanel.Size = new Vec2(topContainer.Size.X, localSendStripHeight);
-            localSendPanel.LocalPosition = new Vec2(0, -topSpacing * 1.5f - tray.Size.Y - 14f);
+            var strip = LocalSendPanel.RequiredStripHeight();
+            tray.Size = new Vec2(topContainer.Size.X, IslandSizeBig().Y - bCD - topSpacing - topContainer.Size.Y / 2 - (isLocalSend ? strip : 0f));
+            localSendPanel.Size = new Vec2(topContainer.Size.X, strip);
+            localSendPanel.LocalPosition = new Vec2(0, -topSpacing * 1.5f - tray.Size.Y);
 
             if(cycle % 32 == 0)
             {

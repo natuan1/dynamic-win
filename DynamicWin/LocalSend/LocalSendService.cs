@@ -14,7 +14,10 @@ using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Net.NetworkInformation;
+using System.Net.Security;
 using System.Net.Sockets;
+using System.Security.Cryptography;
+using System.Security.Cryptography.X509Certificates;
 using System.Text;
 
 namespace DynamicWin.LocalSend;
@@ -74,13 +77,7 @@ public sealed class LocalSendService(ISettingsStore settingsStore) : IApplicatio
 
         EnsureFirewallRule();
 
-        var fingerprint = settingsStore.Get<string>("localsend.fingerprint");
-        if (string.IsNullOrEmpty(fingerprint))
-        {
-            fingerprint = Guid.NewGuid().ToString("N");
-            settingsStore.Set("localsend.fingerprint", fingerprint);
-            settingsStore.Save();
-        }
+        var clientCertificate = LoadOrCreateCertificate();
 
         Self = new DeviceIdentity
         {
@@ -88,24 +85,38 @@ public sealed class LocalSendService(ISettingsStore settingsStore) : IApplicatio
             Version = LocalSendProtocol.ProtocolVersion,
             DeviceModel = "Windows",
             DeviceType = "desktop",
-            Fingerprint = fingerprint,
+            // LocalSend identity: SHA-256 of the certificate's DER encoding.
+            Fingerprint = Convert.ToHexString(SHA256.HashData(clientCertificate.Export(X509ContentType.Cert))),
             Protocol = "http",
             Download = false,
         };
 
-        http = new HttpClient(new HttpClientHandler
+        http = new HttpClient(new SocketsHttpHandler
         {
-            // LocalSend peers use self-signed certificates; fingerprint pinning is a
-            // follow-up (see docs/adr/0001).
-            ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator,
+            SslOptions = new SslClientAuthenticationOptions
+            {
+                // LocalSend peers use self-signed certificates; fingerprint pinning is a
+                // follow-up (see docs/adr/0001).
+                RemoteCertificateValidationCallback = (_, _, _, _) => true,
+                // LocalSend v2.2+ requires the sender to identify itself with its
+                // self-signed certificate during the TLS handshake (mTLS); without
+                // it peers abort with TLS alert 116 (certificate_required).
+                ClientCertificates = new X509CertificateCollection { clientCertificate },
+                LocalCertificateSelectionCallback = (_, _, _, _, _) => clientCertificate,
+            },
         })
         { Timeout = Timeout.InfiniteTimeSpan };
         // Some peers (notably the Android app) negotiate TLS 1.3 with SChannel
         // and then fail record decryption; a TLS 1.2 retry connects reliably.
-        httpTls12 = new HttpClient(new HttpClientHandler
+        httpTls12 = new HttpClient(new SocketsHttpHandler
         {
-            ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator,
-            SslProtocols = System.Security.Authentication.SslProtocols.Tls12,
+            SslOptions = new SslClientAuthenticationOptions
+            {
+                RemoteCertificateValidationCallback = (_, _, _, _) => true,
+                ClientCertificates = new X509CertificateCollection { clientCertificate },
+                LocalCertificateSelectionCallback = (_, _, _, _, _) => clientCertificate,
+                EnabledSslProtocols = System.Security.Authentication.SslProtocols.Tls12,
+            },
         })
         { Timeout = Timeout.InfiniteTimeSpan };
         networkCts = new CancellationTokenSource();
@@ -121,14 +132,42 @@ public sealed class LocalSendService(ISettingsStore settingsStore) : IApplicatio
         StartNetworkLoops();
     }
 
-    void EnsureFirewallRule()
+    static X509Certificate2 LoadOrCreateCertificate()
     {
+        var path = Path.Combine(ApplicationDataPaths.SettingsDirectory, "localsend-cert.pfx");
+        X509Certificate2? loaded = null;
         try
         {
-            if (settingsStore.Get<bool>("localsend.firewall.declined")) return;
+            if (File.Exists(path))
+                loaded = new X509Certificate2(path);
         }
-        catch { }
+        catch (Exception exception)
+        {
+            Log($"Certificate load failed ({exception.Message}); generating a new one");
+            loaded = null;
+        }
 
+        // Renew automatically when less than 30 days remain; the certificate is
+        // created on first run and regenerating it resets the device fingerprint.
+        if (loaded != null && loaded.GetECDsaPrivateKey() != null && loaded.NotAfter > DateTimeOffset.UtcNow.AddDays(30))
+            return loaded;
+        loaded?.Reset();
+
+        using var ecdsa = ECDsa.Create(ECCurve.NamedCurves.nistP256);
+        var certificate = new CertificateRequest("CN=LocalSend User", ecdsa, HashAlgorithmName.SHA256)
+            .CreateSelfSigned(DateTimeOffset.UtcNow.AddDays(-1), DateTimeOffset.UtcNow.AddYears(10));
+
+        Directory.CreateDirectory(ApplicationDataPaths.SettingsDirectory);
+        File.WriteAllBytes(path, certificate.Export(X509ContentType.Pfx));
+        Log($"Generated LocalSend certificate at {path}");
+
+        // Reload from disk: CreateSelfSigned holds an ephemeral CNG key that
+        // SChannel rejects (0x8009030D); PFX import persists it in the user key set.
+        return new X509Certificate2(path);
+    }
+
+    void EnsureFirewallRule()
+    {
         if (LocalSendFirewall.EnsureRule()) return;
 
         Log("Firewall install declined by user; saving localsend.firewall.declined");

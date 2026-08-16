@@ -21,15 +21,32 @@ namespace DynamicWin.UI.UIElements.Custom
         DWTextButton cancelButton;
 
         const int MaxRows = 3;
+        const float RowHeight = 22f;
+        const float RowSpacing = 6f;
+        // Row 1 sits 16px below the mode buttons. topContainer spans island
+        // Y 15..45 with its buttons ending at Y 40; the strip starts at Y 57.5.
+        const float FirstRowTopOffset = -1.5f;
+        const float FirstRowCenterY = FirstRowTopOffset + RowHeight / 2;
+        // Gap between the last row and the tray file list below the strip.
+        const float BottomGap = 16f;
+
+        // The strip hugs its actual content: 16px below the buttons, the rows,
+        // then 16px above the tray file list.
+        public static float RequiredStripHeight()
+        {
+            var count = Math.Max(1, Math.Min(LocalSendService.Instance?.Devices.Count ?? 0, MaxRows));
+            var stack = count * RowHeight + (count - 1) * RowSpacing;
+            return FirstRowTopOffset + stack + BottomGap;
+        }
 
         public LocalSendPanel(UIObject? parent, Tray tray, Vec2 position, Vec2 size, UIAlignment alignment = UIAlignment.TopCenter) : base(parent, position, size, alignment)
         {
             this.tray = tray;
             Color = Col.Transparent;
 
-            statusText = new DWText(this, "Searching for nearby devices…", Vec2.zero, UIAlignment.Center)
+            statusText = new DWText(this, "Searching for nearby devices…", new Vec2(0, FirstRowCenterY), UIAlignment.TopCenter)
             {
-                TextSize = 11,
+                TextSize = 12,
                 Color = Theme.TextSecond
             };
             AddLocalObject(statusText);
@@ -142,11 +159,12 @@ namespace DynamicWin.UI.UIElements.Custom
 
             var rowWidth = Math.Max(Size.X - 40, 100);
             var devices = service.Devices;
+            var count = Math.Min(devices.Count, MaxRows);
 
-            for (var i = 0; i < devices.Count && i < MaxRows; i++)
+            for (var i = 0; i < count; i++)
             {
                 var device = devices[i];
-                var row = new DeviceRow(this, device, new Vec2(0, 10 + i * 30 - (MaxRows - 1) * 15), new Vec2(rowWidth, 22), () => SendToDevice(device), UIAlignment.Center);
+                var row = new DeviceRow(this, device, new Vec2(0, FirstRowCenterY + i * (RowHeight + RowSpacing)), new Vec2(rowWidth, RowHeight), () => SendToDevice(device), UIAlignment.TopCenter);
                 rows.Add(row);
                 AddLocalObject(row);
             }
@@ -183,14 +201,19 @@ namespace DynamicWin.UI.UIElements.Custom
 
             AddLocalObject(new DWText(this, DWText.Truncate(device.Identity.Alias, 16), new Vec2(12, 0), UIAlignment.MiddleLeft)
             {
-                TextSize = 11,
-                Color = Theme.TextMain
+                TextSize = 12,
+                Color = Theme.TextMain,
+                // Anchor the text's left edge at the aligned point; the default
+                // 0.5 anchor centers the whole string on that point and lets long
+                // aliases overflow the row.
+                Anchor = new Vec2(0f, 0.5f)
             });
 
             AddLocalObject(new DWText(this, device.Address, new Vec2(-12, 0), UIAlignment.MiddleRight)
             {
-                TextSize = 9,
-                Color = Theme.TextThird
+                TextSize = 10,
+                Color = Theme.TextThird,
+                Anchor = new Vec2(1f, 0.5f)
             });
         }
 
