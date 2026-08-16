@@ -2,15 +2,11 @@
 
 <p align="center">
   <img src="https://img.shields.io/badge/c%23-%23239120.svg?style=for-the-badge&logo=csharp&logoColor=white">
-  <a href="https://creativecommons.org/licenses/by-sa/4.0/"><img src="https://img.shields.io/static/v1?label=License&message=CC+BY-SA+4.0&color=%23c49b04&style=for-the-badge"></a>
-  <a href="https://discord.gg/UHFuqB9NqR"><img src="https://dcbadge.limes.pink/api/server/https://discord.gg/UHFuqB9NqR)](https://discord.gg/UHFuqB9NqR"></a>
 </p>
 
 <p align="center">
   <img src="ReadmeFiles/IslandGif-1_Volume.gif" style="border-radius:15px" alt="animated" width="1000" height="auto" />
 </p>
-
-<p xmlns:cc="http://creativecommons.org/ns#" xmlns:dct="http://purl.org/dc/terms/"><a property="dct:title" rel="cc:attributionURL" href="https://github.com/FlorianButz/DynamicWin">DynamicWin</a> by <a rel="cc:attributionURL dct:creator" property="cc:attributionName" href="https://github.com/FlorianButz">Florian Butz</a> is licensed under <a href="https://creativecommons.org/licenses/by-sa/4.0/?ref=chooser-v1" target="_blank" rel="license noopener noreferrer" style="display:inline-block;">CC BY-SA 4.0<img style="height:22px!important;margin-left:3px;vertical-align:text-bottom;" src="https://mirrors.creativecommons.org/presskit/icons/cc.svg?ref=chooser-v1" alt=""><img style="height:22px!important;margin-left:3px;vertical-align:text-bottom;" src="https://mirrors.creativecommons.org/presskit/icons/by.svg?ref=chooser-v1" alt=""><img style="height:22px!important;margin-left:3px;vertical-align:text-bottom;" src="https://mirrors.creativecommons.org/presskit/icons/sa.svg?ref=chooser-v1" alt=""></a></p>
 
 > [!NOTE]
 > This App is undergoing a major re-write from scratch, which will hopefully soon be released.
@@ -25,7 +21,7 @@ To build this project, ensure that you have the latest version of **.NET 8.0** i
 
 To get started:
 ```bash
-git pull https://github.com/59xa/DynamicWin.git
+git clone https://github.com/natuan1/dynamic-win.git
 ```
 
 ### Future plans
@@ -93,7 +89,7 @@ Mods can contain malicious code that can mess up your system, so always check a 
 </p>
 
 > [!NOTE]
-> Custom themes are not the main priority for this repository, but will remain supported for use. Visit Florian's Discord server to get access to more themes like the ones shown from above.
+> Custom themes are not the main priority for this repository, but will remain supported for use.
 
 You can use the built-in dark / light theme. You can also create custom themes that fit your liking by going to the `%appdata%/DynamicWin/Theme.json` file. After editing the colors you need to select the `Custom` theme option in the settings. If you already did that, you will need to go back to the settings and click on it again. Otherwise you would have to restart the app.
 <br>
@@ -103,7 +99,7 @@ This is an example of a color:
 The hex code is structured this way: `#rrggbb`. If you want to change the alpha of the color, it is **always** at the start of the code. `#aarrggbb`.
 
 # Known Issues
-The performance might not be the best, as said by Florian. More optimisations in the codebase will happen as time passes. <br><br>
+The performance might not be the best. More optimisations in the codebase will happen as time passes. <br><br>
 
 The app might suddenly disappear and upon trying to reopen it a message box will tell you that only one instance of the app can run at the same time. To fix this, open task manager and find the process "DynamicWin". Kill it and start the app again. <br><br>
 
@@ -121,11 +117,11 @@ Here is an example of how the extension class should look like:
 ```cs
 public class TestExtension : IDynamicWinExtension
 {
-    public string AuthorName => "Florian Butz"; // The display name of the author (you) of the extension
+    public string AuthorName => "Your Name"; // The display name of the author (you) of the extension
 
     public string ExtensionName => "Test Extension"; // The dislpay name of the extension
 
-    public string ExtensionID => "florianbutz.test"; // The ID of the extension
+    public string ExtensionID => "com.example.test"; // The ID of the extension
 
     public List<IRegisterableWidget> GetExtensionWidgets() // Returns all Widgets that are available in this extension
     {

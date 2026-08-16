@@ -3,8 +3,7 @@
 
 #define MyAppName "DynamicWin"
 #define MyAppVersion "1.0.7R"
-#define MyAppPublisher "Florian Butz"
-#define MyAppURL "https://github.com/FlorianButz/DynamicWin/"
+#define MyAppURL "https://github.com/natuan1/dynamic-win/"
 #define MyAppExeName "DynamicWin.exe"
 
 [Setup]
@@ -14,56 +13,54 @@ AppId={{A66017B2-AE28-4BED-B115-D93DED138D15}
 AppName={#MyAppName}
 AppVersion={#MyAppVersion}
 ;AppVerName={#MyAppName} {#MyAppVersion}
-AppPublisher={#MyAppPublisher}
 AppPublisherURL={#MyAppURL}
 AppSupportURL={#MyAppURL}
 AppUpdatesURL={#MyAppURL}
 DefaultDirName={autopf}\{#MyAppName}
 DisableDirPage=yes
 DisableProgramGroupPage=yes
-LicenseFile=C:\Users\fb859\Documents\GitHub\DynamicWindows\LICENSE
 ; Uncomment the following line to run in non administrative install mode (install for current user only.)
 ;PrivilegesRequired=lowest
-OutputDir=C:\Users\fb859\Downloads
+OutputDir=.
 OutputBaseFilename=DynamicWinSetup
 Compression=lzma
 SolidCompression=yes
 WizardStyle=modern
-SetupIconFile=C:\Users\fb859\Documents\GitHub\DynamicWindows\Other\InstallerIcon\SetupIcon.ico
+SetupIconFile=InstallerIcon\SetupIcon.ico
 
 [Languages]
 Name: "english"; MessagesFile: "compiler:Default.isl"
 
 [Files]
-Source: "C:\Users\fb859\Documents\GitHub\DynamicWindows\DynamicWin\bin\Release\net8.0-windows\{#MyAppExeName}"; DestDir: "{app}"; Flags: ignoreversion
-Source: "C:\Users\fb859\Documents\GitHub\DynamicWindows\DynamicWin\bin\Release\net8.0-windows\DynamicWin.deps.json"; DestDir: "{app}"; Flags: ignoreversion
-Source: "C:\Users\fb859\Documents\GitHub\DynamicWindows\DynamicWin\bin\Release\net8.0-windows\DynamicWin.dll"; DestDir: "{app}"; Flags: ignoreversion
-Source: "C:\Users\fb859\Documents\GitHub\DynamicWindows\DynamicWin\bin\Release\net8.0-windows\DynamicWin.pdb"; DestDir: "{app}"; Flags: ignoreversion
-Source: "C:\Users\fb859\Documents\GitHub\DynamicWindows\DynamicWin\bin\Release\net8.0-windows\DynamicWin.runtimeconfig.json"; DestDir: "{app}"; Flags: ignoreversion
-Source: "C:\Users\fb859\Documents\GitHub\DynamicWindows\DynamicWin\bin\Release\net8.0-windows\FftSharp.dll"; DestDir: "{app}"; Flags: ignoreversion
-Source: "C:\Users\fb859\Documents\GitHub\DynamicWindows\DynamicWin\bin\Release\net8.0-windows\HidSharp.dll"; DestDir: "{app}"; Flags: ignoreversion
-Source: "C:\Users\fb859\Documents\GitHub\DynamicWindows\DynamicWin\bin\Release\net8.0-windows\LibreHardwareMonitorLib.dll"; DestDir: "{app}"; Flags: ignoreversion
-Source: "C:\Users\fb859\Documents\GitHub\DynamicWindows\DynamicWin\bin\Release\net8.0-windows\NAudio.Asio.dll"; DestDir: "{app}"; Flags: ignoreversion
-Source: "C:\Users\fb859\Documents\GitHub\DynamicWindows\DynamicWin\bin\Release\net8.0-windows\NAudio.Core.dll"; DestDir: "{app}"; Flags: ignoreversion
-Source: "C:\Users\fb859\Documents\GitHub\DynamicWindows\DynamicWin\bin\Release\net8.0-windows\NAudio.dll"; DestDir: "{app}"; Flags: ignoreversion
-Source: "C:\Users\fb859\Documents\GitHub\DynamicWindows\DynamicWin\bin\Release\net8.0-windows\NAudio.Midi.dll"; DestDir: "{app}"; Flags: ignoreversion
-Source: "C:\Users\fb859\Documents\GitHub\DynamicWindows\DynamicWin\bin\Release\net8.0-windows\NAudio.Wasapi.dll"; DestDir: "{app}"; Flags: ignoreversion
-Source: "C:\Users\fb859\Documents\GitHub\DynamicWindows\DynamicWin\bin\Release\net8.0-windows\NAudio.WinForms.dll"; DestDir: "{app}"; Flags: ignoreversion
-Source: "C:\Users\fb859\Documents\GitHub\DynamicWindows\DynamicWin\bin\Release\net8.0-windows\NAudio.WinMM.dll"; DestDir: "{app}"; Flags: ignoreversion
-Source: "C:\Users\fb859\Documents\GitHub\DynamicWindows\DynamicWin\bin\Release\net8.0-windows\Newtonsoft.Json.dll"; DestDir: "{app}"; Flags: ignoreversion
+Source: "..\DynamicWin\bin\Release\net10.0-windows\{#MyAppExeName}"; DestDir: "{app}"; Flags: ignoreversion
+Source: "..\DynamicWin\bin\Release\net10.0-windows\DynamicWin.deps.json"; DestDir: "{app}"; Flags: ignoreversion
+Source: "..\DynamicWin\bin\Release\net10.0-windows\DynamicWin.dll"; DestDir: "{app}"; Flags: ignoreversion
+Source: "..\DynamicWin\bin\Release\net10.0-windows\DynamicWin.pdb"; DestDir: "{app}"; Flags: ignoreversion
+Source: "..\DynamicWin\bin\Release\net10.0-windows\DynamicWin.runtimeconfig.json"; DestDir: "{app}"; Flags: ignoreversion
+Source: "..\DynamicWin\bin\Release\net10.0-windows\FftSharp.dll"; DestDir: "{app}"; Flags: ignoreversion
+Source: "..\DynamicWin\bin\Release\net10.0-windows\HidSharp.dll"; DestDir: "{app}"; Flags: ignoreversion
+Source: "..\DynamicWin\bin\Release\net10.0-windows\LibreHardwareMonitorLib.dll"; DestDir: "{app}"; Flags: ignoreversion
+Source: "..\DynamicWin\bin\Release\net10.0-windows\NAudio.Asio.dll"; DestDir: "{app}"; Flags: ignoreversion
+Source: "..\DynamicWin\bin\Release\net10.0-windows\NAudio.Core.dll"; DestDir: "{app}"; Flags: ignoreversion
+Source: "..\DynamicWin\bin\Release\net10.0-windows\NAudio.dll"; DestDir: "{app}"; Flags: ignoreversion
+Source: "..\DynamicWin\bin\Release\net10.0-windows\NAudio.Midi.dll"; DestDir: "{app}"; Flags: ignoreversion
+Source: "..\DynamicWin\bin\Release\net10.0-windows\NAudio.Wasapi.dll"; DestDir: "{app}"; Flags: ignoreversion
+Source: "..\DynamicWin\bin\Release\net10.0-windows\NAudio.WinForms.dll"; DestDir: "{app}"; Flags: ignoreversion
+Source: "..\DynamicWin\bin\Release\net10.0-windows\NAudio.WinMM.dll"; DestDir: "{app}"; Flags: ignoreversion
+Source: "..\DynamicWin\bin\Release\net10.0-windows\Newtonsoft.Json.dll"; DestDir: "{app}"; Flags: ignoreversion
 
 
-Source: "C:\Users\fb859\Documents\GitHub\DynamicWindows\DynamicWin\bin\Release\net8.0-windows\SkiaSharp.dll"; DestDir: "{app}"; Flags: ignoreversion
+Source: "..\DynamicWin\bin\Release\net10.0-windows\SkiaSharp.dll"; DestDir: "{app}"; Flags: ignoreversion
 
 
 
 
 
-Source: "C:\Users\fb859\Documents\GitHub\DynamicWindows\DynamicWin\bin\Release\net8.0-windows\System.CodeDom.dll"; DestDir: "{app}"; Flags: ignoreversion
-Source: "C:\Users\fb859\Documents\GitHub\DynamicWindows\DynamicWin\bin\Release\net8.0-windows\System.IO.Ports.dll"; DestDir: "{app}"; Flags: ignoreversion
-Source: "C:\Users\fb859\Documents\GitHub\DynamicWindows\DynamicWin\bin\Release\net8.0-windows\System.Management.dll"; DestDir: "{app}"; Flags: ignoreversion
-Source: "C:\Users\fb859\Documents\GitHub\DynamicWindows\DynamicWin\bin\Release\net8.0-windows\Resources\*"; DestDir: "{app}\Resources"; Flags: ignoreversion recursesubdirs createallsubdirs
-Source: "C:\Users\fb859\Documents\GitHub\DynamicWindows\DynamicWin\bin\Release\net8.0-windows\runtimes\*"; DestDir: "{app}\runtimes"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "..\DynamicWin\bin\Release\net10.0-windows\System.CodeDom.dll"; DestDir: "{app}"; Flags: ignoreversion
+Source: "..\DynamicWin\bin\Release\net10.0-windows\System.IO.Ports.dll"; DestDir: "{app}"; Flags: ignoreversion
+Source: "..\DynamicWin\bin\Release\net10.0-windows\System.Management.dll"; DestDir: "{app}"; Flags: ignoreversion
+Source: "..\DynamicWin\bin\Release\net10.0-windows\Resources\*"; DestDir: "{app}\Resources"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "..\DynamicWin\bin\Release\net10.0-windows\runtimes\*"; DestDir: "{app}\runtimes"; Flags: ignoreversion recursesubdirs createallsubdirs
 ; NOTE: Don't use "Flags: ignoreversion" on any shared system files
 
 [Icons]

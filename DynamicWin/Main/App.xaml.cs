@@ -63,7 +63,7 @@ namespace DynamicWin
             Dispatcher.UnhandledException += Dispatcher_UnhandledException;
 
             bool result;
-            mutex = new System.Threading.Mutex(true, "FlorianButz.DynamicWin", out result);
+            mutex = new System.Threading.Mutex(true, "DynamicWin", out result);
 
             if (!result)
             {
