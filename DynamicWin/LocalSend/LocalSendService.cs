@@ -409,10 +409,10 @@ public sealed class LocalSendService(ISettingsStore settingsStore) : IApplicatio
         registry.AddOrUpdate(identity, remote.Address.ToString() ?? "");
 
         if (identity.Announce == true)
-            _ = RegisterToDeviceAsync(remote.Address.ToString() ?? "", identity.EffectivePort, networkCts!.Token);
+            _ = RegisterToDeviceAsync(remote.Address.ToString() ?? "", identity.EffectivePort, identity.Protocol ?? "https", networkCts!.Token);
     }
 
-    async Task RegisterToDeviceAsync(string address, int port, CancellationToken token)
+    async Task RegisterToDeviceAsync(string address, int port, string protocol, CancellationToken token)
     {
         if (http == null) return;
 
@@ -420,8 +420,8 @@ public sealed class LocalSendService(ISettingsStore settingsStore) : IApplicatio
         {
             using var timeout = CancellationTokenSource.CreateLinkedTokenSource(token);
             timeout.CancelAfter(TimeSpan.FromSeconds(5));
-            await http.PostAsync(
-                $"http://{address}:{port}{LocalSendProtocol.ApiBase}/register",
+            await PostWithTlsFallbackAsync(
+                $"{(protocol == "http" ? "http" : "https")}://{address}:{port}{LocalSendProtocol.ApiBase}/register",
                 new StringContent(Self.ToJson(), Encoding.UTF8, "application/json"),
                 timeout.Token);
         }
