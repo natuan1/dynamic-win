@@ -54,6 +54,7 @@ public sealed class LocalSendService(ISettingsStore settingsStore) : IApplicatio
     private string? activeSessionId;
 
     private HttpClient? http;
+    private HttpClient? httpTls12;
     private Socket? udp;
     private CancellationTokenSource? networkCts;
     private WebApplication? app;
@@ -97,6 +98,14 @@ public sealed class LocalSendService(ISettingsStore settingsStore) : IApplicatio
             // LocalSend peers use self-signed certificates; fingerprint pinning is a
             // follow-up (see docs/adr/0001).
             ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator,
+        })
+        { Timeout = Timeout.InfiniteTimeSpan };
+        // Some peers (notably the Android app) negotiate TLS 1.3 with SChannel
+        // and then fail record decryption; a TLS 1.2 retry connects reliably.
+        httpTls12 = new HttpClient(new HttpClientHandler
+        {
+            ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator,
+            SslProtocols = System.Security.Authentication.SslProtocols.Tls12,
         })
         { Timeout = Timeout.InfiniteTimeSpan };
         networkCts = new CancellationTokenSource();
@@ -152,6 +161,8 @@ public sealed class LocalSendService(ISettingsStore settingsStore) : IApplicatio
 
         http?.Dispose();
         http = null;
+        httpTls12?.Dispose();
+        httpTls12 = null;
 
         if (ReferenceEquals(Instance, this))
             Instance = null;
@@ -365,7 +376,7 @@ public sealed class LocalSendService(ISettingsStore settingsStore) : IApplicatio
             {
                 using var timeout = CancellationTokenSource.CreateLinkedTokenSource(token);
                 timeout.CancelAfter(TimeSpan.FromMilliseconds(900));
-                var json = await http.GetStringAsync(
+                var json = await GetStringWithTlsFallbackAsync(
                     $"{scheme}://{address}:{LocalSendProtocol.DefaultHttpPort}{LocalSendProtocol.ApiBase}/info", timeout.Token);
 
                 var identity = DeviceIdentity.FromJson(json);
@@ -455,6 +466,32 @@ public sealed class LocalSendService(ISettingsStore settingsStore) : IApplicatio
     static string DeviceBaseUrl(LocalSendDevice device) =>
         $"{(device.Identity.Protocol == "https" ? "https" : "http")}://{device.Address}:{device.Identity.EffectivePort}";
 
+    async Task<HttpResponseMessage> PostWithTlsFallbackAsync(string url, HttpContent? content, CancellationToken ct)
+    {
+        try
+        {
+            return await http!.PostAsync(url, content, ct);
+        }
+        catch (HttpRequestException exception) when (httpTls12 != null && exception.InnerException is IOException)
+        {
+            Log($"TLS record error ({exception.GetBaseException().Message}); retrying with TLS 1.2");
+            return await httpTls12.PostAsync(url, content, ct);
+        }
+    }
+
+    async Task<string> GetStringWithTlsFallbackAsync(string url, CancellationToken ct)
+    {
+        try
+        {
+            return await http!.GetStringAsync(url, ct);
+        }
+        catch (HttpRequestException exception) when (httpTls12 != null && exception.InnerException is IOException)
+        {
+            Log($"TLS record error ({exception.GetBaseException().Message}); retrying with TLS 1.2");
+            return await httpTls12.GetStringAsync(url, ct);
+        }
+    }
+
     LocalSendDevice? sessionTarget;
 
     async Task SendFilesAsync(LocalSendDevice device, IReadOnlyList<string> filePaths, CancellationToken ct)
@@ -491,7 +528,7 @@ public sealed class LocalSendService(ISettingsStore settingsStore) : IApplicatio
             using var prepareTimeout = CancellationTokenSource.CreateLinkedTokenSource(ct);
             prepareTimeout.CancelAfter(TimeSpan.FromSeconds(20));
 
-            using var prepareResponse = await http!.PostAsync(
+            using var prepareResponse = await PostWithTlsFallbackAsync(
                 $"{DeviceBaseUrl(device)}{LocalSendProtocol.ApiBase}/prepare-upload",
                 new StringContent(request.ToJson(), Encoding.UTF8, "application/json"),
                 prepareTimeout.Token);
@@ -564,7 +601,7 @@ public sealed class LocalSendService(ISettingsStore settingsStore) : IApplicatio
                     }
                 });
 
-                using var uploadResponse = await http.PostAsync(
+                using var uploadResponse = await PostWithTlsFallbackAsync(
                     $"{DeviceBaseUrl(device)}{LocalSendProtocol.ApiBase}/upload?sessionId={Uri.EscapeDataString(payload.SessionId)}&fileId={Uri.EscapeDataString(entry.Key)}&token={Uri.EscapeDataString(token)}",
                     content, ct);
 
@@ -593,6 +630,18 @@ public sealed class LocalSendService(ISettingsStore settingsStore) : IApplicatio
         {
             Log($"Send error: {exception}");
             SetState(LocalSendSendStatus.Failed, $"Error: {exception.Message}", 0, "");
+        }
+    }
+
+    public void ResetState()
+    {
+        lock (stateGate)
+        {
+            if (status is LocalSendSendStatus.Preparing or LocalSendSendStatus.Sending) return;
+            status = LocalSendSendStatus.Idle;
+            statusMessage = "";
+            progress = 0;
+            currentFile = "";
         }
     }
 

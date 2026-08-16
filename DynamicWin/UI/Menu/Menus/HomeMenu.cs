@@ -115,7 +115,7 @@ namespace DynamicWin.UI.Menu.Menus
         DWTextImageButton localSendButton;
         LocalSendPanel localSendPanel;
 
-        const float localSendStripHeight = 70f;
+        const float localSendStripHeight = 100f;
 
         public override List<UIObject> InitializeMenu(IslandObject island)
         {
@@ -334,9 +334,9 @@ namespace DynamicWin.UI.Menu.Menus
         {
             bool isLocalSend = mode == HomeMode.LocalSend;
 
-            tray.Size = new Vec2(topContainer.Size.X, IslandSizeBig().Y - bCD - topSpacing - topContainer.Size.Y / 2 - (isLocalSend ? localSendStripHeight + 10f : 0f));
+            tray.Size = new Vec2(topContainer.Size.X, IslandSizeBig().Y - bCD - topSpacing - topContainer.Size.Y / 2 - (isLocalSend ? localSendStripHeight + 14f : 0f));
             localSendPanel.Size = new Vec2(topContainer.Size.X, localSendStripHeight);
-            localSendPanel.LocalPosition = new Vec2(0, -topSpacing * 1.5f - tray.Size.Y - 10f);
+            localSendPanel.LocalPosition = new Vec2(0, -topSpacing * 1.5f - tray.Size.Y - 14f);
 
             if(cycle % 32 == 0)
             {

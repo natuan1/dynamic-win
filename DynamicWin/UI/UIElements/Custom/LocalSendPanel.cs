@@ -12,6 +12,8 @@ namespace DynamicWin.UI.UIElements.Custom
         readonly List<DeviceRow> rows = new();
         int renderedVersion = -1;
         LocalSendSendStatus lastStatus = LocalSendSendStatus.Idle;
+        float terminalTimer;
+        const float TerminalHoldSeconds = 4f;
 
         DWText statusText;
         DWProgressBar progressBar;
@@ -32,7 +34,7 @@ namespace DynamicWin.UI.UIElements.Custom
             };
             AddLocalObject(statusText);
 
-            progressLabel = new DWText(this, "", new Vec2(0, -14), UIAlignment.Center)
+            progressLabel = new DWText(this, "", new Vec2(0, -18), UIAlignment.Center)
             {
                 TextSize = 10,
                 Color = Theme.TextMain
@@ -45,7 +47,7 @@ namespace DynamicWin.UI.UIElements.Custom
             progressBar.SilentSetActive(false);
             AddLocalObject(progressBar);
 
-            cancelButton = new DWTextButton(this, "Cancel", new Vec2(0, 22), new Vec2(70, 16), () => LocalSendService.Instance?.CancelSend(), UIAlignment.Center)
+            cancelButton = new DWTextButton(this, "Cancel", new Vec2(0, 26), new Vec2(70, 16), () => LocalSendService.Instance?.CancelSend(), UIAlignment.Center)
             {
                 roundRadius = 15
             };
@@ -101,11 +103,27 @@ namespace DynamicWin.UI.UIElements.Custom
 
             if (state != LocalSendSendStatus.Idle)
             {
+                if (state is LocalSendSendStatus.Completed or LocalSendSendStatus.Failed
+                    or LocalSendSendStatus.Rejected or LocalSendSendStatus.RequiresPin
+                    or LocalSendSendStatus.Busy or LocalSendSendStatus.Cancelled)
+                {
+                    // Let the user read the outcome, then fall back to the device list.
+                    terminalTimer += deltaTime;
+                    if (terminalTimer >= TerminalHoldSeconds)
+                    {
+                        terminalTimer = 0f;
+                        service?.ResetState();
+                    }
+                }
+                else terminalTimer = 0f;
+
                 ClearRows();
                 statusText.SilentSetActive(true);
                 statusText.Text = DWText.Truncate(service.StatusMessage, 44);
                 return;
             }
+
+            terminalTimer = 0f;
 
             if (service.Registry.Version != renderedVersion)
             {
@@ -128,7 +146,7 @@ namespace DynamicWin.UI.UIElements.Custom
             for (var i = 0; i < devices.Count && i < MaxRows; i++)
             {
                 var device = devices[i];
-                var row = new DeviceRow(this, device, new Vec2(0, i * 26 - (MaxRows - 1) * 13), new Vec2(rowWidth, 20), () => SendToDevice(device), UIAlignment.Center);
+                var row = new DeviceRow(this, device, new Vec2(0, 10 + i * 30 - (MaxRows - 1) * 15), new Vec2(rowWidth, 22), () => SendToDevice(device), UIAlignment.Center);
                 rows.Add(row);
                 AddLocalObject(row);
             }
