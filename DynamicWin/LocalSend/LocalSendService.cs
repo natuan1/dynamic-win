@@ -285,7 +285,9 @@ public sealed class LocalSendService(ISettingsStore settingsStore) : IApplicatio
                     catch { }
                 }
 
-                registry.Prune(DateTime.UtcNow, TimeSpan.FromSeconds(60));
+                // Phones announce mostly on app start and then stay quiet, so keep
+                // devices around for a while; the /24 probe refreshes live ones.
+                registry.Prune(DateTime.UtcNow, TimeSpan.FromMinutes(5));
 
                 try { await Task.Delay(TimeSpan.FromSeconds(10), token); } catch { }
             }
@@ -355,6 +357,11 @@ public sealed class LocalSendService(ISettingsStore settingsStore) : IApplicatio
     // LocalSend /info endpoint, over both https and http.
     async Task ScanSubnetAsync(CancellationToken token)
     {
+        // Re-probe known devices first so entries stay fresh even when a peer
+        // only announces once at startup.
+        foreach (var device in registry.Snapshot())
+            await ProbeAddressAsync(device.Address, token);
+
         foreach (var local in GetIpv4InterfaceAddresses())
         {
             var bytes = local.GetAddressBytes();
@@ -472,9 +479,9 @@ public sealed class LocalSendService(ISettingsStore settingsStore) : IApplicatio
         {
             return await http!.PostAsync(url, content, ct);
         }
-        catch (HttpRequestException exception) when (httpTls12 != null && exception.InnerException is IOException)
+        catch (HttpRequestException exception) when (httpTls12 != null)
         {
-            Log($"TLS record error ({exception.GetBaseException().Message}); retrying with TLS 1.2");
+            Log($"HTTPS error ({exception.GetBaseException().Message}); retrying with TLS 1.2");
             return await httpTls12.PostAsync(url, content, ct);
         }
     }
@@ -485,9 +492,9 @@ public sealed class LocalSendService(ISettingsStore settingsStore) : IApplicatio
         {
             return await http!.GetStringAsync(url, ct);
         }
-        catch (HttpRequestException exception) when (httpTls12 != null && exception.InnerException is IOException)
+        catch (HttpRequestException exception) when (httpTls12 != null)
         {
-            Log($"TLS record error ({exception.GetBaseException().Message}); retrying with TLS 1.2");
+            Log($"HTTPS error ({exception.GetBaseException().Message}); retrying with TLS 1.2");
             return await httpTls12.GetStringAsync(url, ct);
         }
     }
