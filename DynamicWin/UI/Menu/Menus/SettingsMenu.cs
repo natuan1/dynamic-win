@@ -269,28 +269,6 @@ namespace DynamicWin.UI.Menu.Menus
                 TextSize = 15
             });
 
-            objects.Add(new DWText(island, "Made by Florian Butz with ♡", new Vec2(25, 0), UIAlignment.TopLeft)
-            {
-                Color = Theme.TextThird,
-                Anchor = new Vec2(0, 0.5f),
-                TextSize = 15
-            });
-
-            objects.Add(new DWText(island, "Maintained and developed by 59xa", new Vec2(25, 0), UIAlignment.TopLeft)
-            {
-                Color = Theme.TextThird,
-                Anchor = new Vec2(0, 0.5f),
-                TextSize = 12,
-                Font = Resources.Res.InterBold
-            });
-
-            objects.Add(new DWText(island, "Licenced under the CC BY-SA 4.0 licence.", new Vec2(25, 0), UIAlignment.TopLeft)
-            {
-                Color = Theme.TextThird,
-                Anchor = new Vec2(0, 0.5f),
-                TextSize = 15
-            });
-
             var backBtn = new DWTextButton(island, "Save changes", new Vec2(0, -45), new Vec2(250, 40), () => { SaveAndBack(); }, UIAlignment.BottomCenter)
             {
                 roundRadius = 25
