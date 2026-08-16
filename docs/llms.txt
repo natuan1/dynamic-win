@@ -1,0 +1,1363 @@
+### Prepare Download
+
+Source: https://github.com/localsend/protocol/blob/main/README.md
+
+Sends a request to the sender to get a list of file metadata. Supports session IDs and PIN authentication.
+
+```APIDOC
+## POST /api/localsend/v2/prepare-download
+
+### Description
+Requests a list of file metadata from the sender. This endpoint is used to initiate a download process.
+
+### Method
+POST
+
+### Endpoint
+/api/localsend/v2/prepare-download
+
+### Parameters
+#### Query Parameters
+- **sessionId** (string) - Optional - The session identifier to maintain continuity.
+- **pin** (string) - Optional - The PIN for authentication if required.
+
+### Request Example
+```text
+No body
+```
+
+### Response
+#### Success Response (200)
+- **info** (object) - Information about the sender device.
+  - **alias** (string) - Alias of the sender device.
+  - **version** (string) - Version of the LocalSend protocol.
+  - **deviceModel** (string) - Model of the sender device (nullable).
+  - **deviceType** (string) - Type of the sender device (mobile | desktop | web | headless | server, nullable).
+  - **fingerprint** (string) - A unique fingerprint for the device (ignored in HTTPS mode).
+  - **download** (boolean) - Indicates if download APIs are active (optional, default: false).
+- **sessionId** (string) - The unique session identifier for the download.
+- **files** (object) - A map of file IDs to file metadata.
+  - **fileId** (object) - Metadata for a specific file.
+    - **id** (string) - The unique identifier for the file.
+    - **fileName** (string) - The name of the file.
+    - **size** (integer) - The size of the file in bytes.
+    - **fileType** (string) - The MIME type of the file.
+    - **sha256** (string) - The SHA256 hash of the file (nullable).
+    - **preview** (string) - Preview data for the file (nullable).
+
+#### Error Responses
+- **401** - PIN required / Invalid PIN
+- **403** - Rejected
+- **429** - Too many requests
+- **500** - Unknown error by sender
+```
+
+--------------------------------
+
+### Prepare Download
+
+Source: https://context7.com/localsend/protocol/llms.txt
+
+In reverse transfer mode, the receiver calls this on the sender to get a list of available files and a session ID for download.
+
+```APIDOC
+## POST /api/localsend/v2/prepare-download
+
+### Description
+Used in the reverse transfer mode where the **sender** runs the HTTP server. The receiver (or a browser) calls this endpoint on the sender to get the list of available files and a session ID. If a PIN is required, append `?pin=123456`. To resume after a browser page refresh, append `?sessionId=<existingSessionId>`.
+
+### Method
+POST
+
+### Endpoint
+/api/localsend/v2/prepare-download
+
+### Parameters
+#### Query Parameters
+- **pin** (string) - Optional - The PIN for authentication if required.
+- **sessionId** (string) - Optional - The existing session ID to resume a download.
+
+### Response
+#### Success Response (200)
+- **info** (object) - Information about the sender's device and connection.
+  - **alias** (string) - Sender's alias.
+  - **version** (string) - LocalSend version.
+  - **deviceModel** (string) - Sender's device model.
+  - **deviceType** (string) - Sender's device type.
+  - **fingerprint** (string) - Unique identifier for the sender.
+  - **download** (boolean) - Indicates this is a download preparation.
+- **sessionId** (string) - The unique identifier for the download session.
+- **files** (object) - A map of file IDs to their details.
+  - **[fileId]** (object) - Details for each file.
+    - **id** (string) - Unique identifier for the file.
+    - **fileName** (string) - Name of the file.
+    - **size** (integer) - Size of the file in bytes.
+    - **fileType** (string) - MIME type of the file.
+    - **sha256** (string) - SHA256 hash of the file.
+    - **preview** (any) - Optional preview data.
+
+### Response Example
+```json
+{
+  "info": {
+    "alias": "Nice Orange",
+    "version": "2.0",
+    "deviceModel": "Samsung",
+    "deviceType": "mobile",
+    "fingerprint": "abc123fingerprint",
+    "download": true
+  },
+  "sessionId": "dl-sess-xyz-789",
+  "files": {
+    "file-001": {
+      "id": "file-001",
+      "fileName": "photo.jpg",
+      "size": 2048000,
+      "fileType": "image/jpeg",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb924",
+      "preview": null
+    }
+  }
+}
+```
+
+### Error Codes
+- 401 - PIN required or invalid
+- 403 - Rejected by sender
+- 429 - Too many requests
+- 500 - Unknown sender error
+```
+
+--------------------------------
+
+### Multicast UDP Announcement
+
+Source: https://github.com/localsend/protocol/blob/main/README.md
+
+Sent at the start of the app to announce its presence on the network. Includes device information and protocol details.
+
+```json5
+{
+  "alias": "Nice Orange",
+  "version": "2.0", // protocol version (major.minor)
+  "deviceModel": "Samsung", // nullable
+  "deviceType": "mobile", // mobile | desktop | web | headless | server, nullable
+  "fingerprint": "random string",
+  "port": 53317,
+  "protocol": "https", // http | https
+  "download": true, // if download API (section 5.2, 5.3) is active (optional, default: false)
+  "announce": true
+}
+```
+
+--------------------------------
+
+### Request Download Session
+
+Source: https://context7.com/localsend/protocol/llms.txt
+
+Initiate a download session from the sender's perspective. The receiver calls this to get the list of available files and a sessionId. Supports PIN protection and resuming existing sessions.
+
+```bash
+# Request the list of files available for download from sender (192.168.1.20)
+curl -X POST "http://192.168.1.20:53317/api/localsend/v2/prepare-download"
+```
+
+```bash
+# With PIN protection:
+curl -X POST "http://192.168.1.20:53317/api/localsend/v2/prepare-download?pin=987654"
+```
+
+--------------------------------
+
+### Get Device Info
+
+Source: https://context7.com/localsend/protocol/llms.txt
+
+Retrieves basic device information for a LocalSend instance. This endpoint is primarily for debugging and diagnostics.
+
+```APIDOC
+## GET /api/localsend/v2/info
+
+### Description
+Returns basic device information for the LocalSend instance. This was the original discovery route in v1 and has been replaced by `/register` for bidirectional discovery. It is retained for debugging and diagnostic purposes only.
+
+### Method
+GET
+
+### Endpoint
+`/api/localsend/v2/info`
+
+### Response
+#### Success Response (200)
+- **alias** (string) - The alias name of the device.
+- **version** (string) - The version of the LocalSend instance.
+- **deviceModel** (string) - The model of the device.
+- **deviceType** (string) - The type of the device (e.g., mobile, desktop).
+- **fingerprint** (string) - A unique identifier for the device.
+- **download** (boolean) - Indicates if downloads are enabled.
+
+### Request Example
+```bash
+curl -X GET "https://192.168.1.10:53317/api/localsend/v2/info"
+```
+
+### Response Example
+```json
+{
+  "alias": "Nice Orange",
+  "version": "2.0",
+  "deviceModel": "Samsung",
+  "deviceType": "mobile",
+  "fingerprint": "abc123fingerprint",
+  "download": true
+}
+```
+```
+
+--------------------------------
+
+### Prepare Upload
+
+Source: https://github.com/localsend/protocol/blob/main/README.md
+
+Sends only the metadata to the receiver. The receiver will decide if this request gets accepted, partially accepted or rejected. If a PIN is required, the query parameter `?pin=123456` should be added.
+
+```APIDOC
+## POST /api/localsend/v2/prepare-upload
+
+### Description
+Sends metadata for file uploads to the receiver. The receiver determines acceptance based on this metadata. A PIN can be provided via a query parameter if required.
+
+### Method
+POST
+
+### Endpoint
+/api/localsend/v2/prepare-upload
+
+### Parameters
+#### Query Parameters
+- **pin** (string) - Optional - The PIN required for authentication.
+
+### Request Body
+- **info** (object) - Required - Contains information about the device and protocol.
+  - **alias** (string) - Required - An alias for the device.
+  - **version** (string) - Required - The protocol version (major.minor).
+  - **deviceModel** (string) - Optional - The model of the device.
+  - **deviceType** (string) - Optional - The type of the device (mobile | desktop | web | headless | server).
+  - **fingerprint** (string) - Optional - A unique identifier for the device (ignored in HTTPS mode).
+  - **port** (integer) - Required - The port number.
+  - **protocol** (string) - Required - The protocol used (http | https).
+  - **download** (boolean) - Optional - Indicates if the download API is active (default: false).
+- **files** (object) - Required - Contains details of the files to be uploaded.
+  - **[fileId]** (object) - Required - An object representing a file.
+    - **id** (string) - Required - The unique identifier for the file.
+    - **fileName** (string) - Required - The name of the file.
+    - **size** (integer) - Required - The size of the file in bytes.
+    - **fileType** (string) - Required - The MIME type of the file.
+    - **sha256** (string) - Optional - The SHA256 hash of the file.
+    - **preview** (string) - Optional - Preview data for the file.
+    - **metadata** (object) - Optional - Additional metadata for the file.
+      - **modified** (string) - Optional - The last modified timestamp.
+      - **accessed** (string) - Optional - The last accessed timestamp.
+
+### Request Example
+```json
+{
+  "info": {
+    "alias": "Nice Orange",
+    "version": "2.0",
+    "deviceModel": "Samsung",
+    "deviceType": "mobile",
+    "fingerprint": "random string",
+    "port": 53317,
+    "protocol": "https",
+    "download": true
+  },
+  "files": {
+    "some file id": {
+      "id": "some file id",
+      "fileName": "my image.png",
+      "size": 324242,
+      "fileType": "image/jpeg",
+      "sha256": "*sha256 hash*",
+      "preview": "*preview data*",
+      "metadata": {
+        "modified": "2021-01-01T12:34:56Z",
+        "accessed": "2021-01-01T12:34:56Z"
+      }
+    },
+    "another file id": {
+      "id": "another file id",
+      "fileName": "another image.jpg",
+      "size": 1234,
+      "fileType": "image/jpeg",
+      "sha256": "*sha256 hash*",
+      "preview": "*preview data*"
+    }
+  }
+}
+```
+
+### Response
+#### Success Response (200)
+- **sessionId** (string) - The unique identifier for the session.
+- **files** (object) - A mapping of file IDs to file tokens.
+  - **[fileId]** (string) - The token associated with the file.
+
+#### Response Example
+```json
+{
+  "sessionId": "mySessionId",
+  "files": {
+    "someFileId": "someFileToken",
+    "someOtherFileId": "someOtherFileToken"
+  }
+}
+```
+
+### Errors
+- **204** - Finished (No file transfer needed)
+- **400** - Invalid body
+- **401** - PIN required / Invalid PIN
+- **403** - Rejected
+- **409** - Blocked by another session
+- **429** - Too many requests
+- **500** - Unknown error by receiver
+```
+
+--------------------------------
+
+### Get Device Info Response
+
+Source: https://github.com/localsend/protocol/blob/main/README.md
+
+This route is primarily for debugging and provides information about the sender device. It was previously used for discovery but is now replaced by the /register endpoint.
+
+```json5
+{
+  "alias": "Nice Orange",
+  "version": "2.0",
+  "deviceModel": "Samsung", // nullable
+  "deviceType": "mobile", // mobile | desktop | web | headless | server, nullable
+  "fingerprint": "random string",
+  "download": true, // if download API (section 5.2, 5.3) is active (optional, default: false)
+}
+```
+
+--------------------------------
+
+### Device Type Enum and Parsing
+
+Source: https://context7.com/localsend/protocol/llms.txt
+
+Defines an enum for device types used in UI display. Unknown values are gracefully handled by falling back to DESKTOP. Examples show usage and building a device info object.
+
+```python
+from enum import Enum
+
+class DeviceType(str, Enum):
+    MOBILE   = "mobile"    # Android, iOS, FireOS
+    DESKTOP  = "desktop"   # Windows, macOS, Linux
+    WEB      = "web"       # Firefox, Chrome (browser-based)
+    HEADLESS = "headless"  # CLI program with no GUI
+    SERVER   = "server"    # Self-hosted cloud service (24/7)
+
+def parse_device_type(value: str) -> DeviceType:
+    """Parse a device type string, falling back to DESKTOP for unknown values."""
+    try:
+        return DeviceType(value)
+    except ValueError:
+        return DeviceType.DESKTOP
+
+# Usage examples:
+print(parse_device_type("mobile"))      # DeviceType.MOBILE
+print(parse_device_type("headless"))    # DeviceType.HEADLESS
+print(parse_device_type("smartwatch"))  # DeviceType.DESKTOP  ← unknown value fallback
+
+# Building a device info object:
+device_info = {
+    "alias": "My Server",
+    "version": "2.0",
+    "deviceModel": "Raspberry Pi 4",
+    "deviceType": DeviceType.SERVER.value,
+    "fingerprint": "abc123",
+    "port": 53317,
+    "protocol": "http",
+    "download": True
+}
+```
+
+--------------------------------
+
+### Prepare Download Request and Response
+
+Source: https://github.com/localsend/protocol/blob/main/README.md
+
+Use this endpoint to request metadata for files to be downloaded. It accepts optional session and PIN parameters. The response includes file details and session information.
+
+```text
+No body
+```
+
+```json5
+{
+  "info": {
+    "alias": "Nice Orange",
+    "version": "2.0",
+    "deviceModel": "Samsung", // nullable
+    "deviceType": "mobile", // mobile | desktop | web | headless | server, nullable
+    "fingerprint": "random string", // ignored in HTTPS mode
+    "download": true, // if download API (section 5.2, 5.3) is active (optional, default: false)
+  },
+  "sessionId": "mySessionId",
+  "files": {
+    "some file id": {
+      "id": "some file id",
+      "fileName": "my image.png",
+      "size": 324242, // bytes
+      "fileType": "image/jpeg",
+      "sha256": "*sha256 hash*", // nullable
+      "preview": "*preview data*" // nullable
+    },
+    "another file id": {
+      "id": "another file id",
+      "fileName": "another image.jpg",
+      "size": 1234,
+      "fileType": "image/jpeg",
+      "sha256": "*sha256 hash*",
+      "preview": "*preview data*"
+    }
+  }
+}
+```
+
+--------------------------------
+
+### Prepare Upload
+
+Source: https://context7.com/localsend/protocol/llms.txt
+
+Initiates an upload session by sending metadata about the files to be transferred. It returns a sessionId and tokens for each file.
+
+```APIDOC
+## POST /api/localsend/v2/prepare-upload
+
+### Description
+Sends metadata to the receiver to initiate a session for file transfer. This endpoint is used to prepare for an upload.
+
+### Method
+POST
+
+### Endpoint
+/api/localsend/v2/prepare-upload
+
+### Request Body
+- **info** (object) - Information about the sender's device and connection.
+  - **alias** (string) - Sender's alias.
+  - **version** (string) - LocalSend version.
+  - **deviceModel** (string) - Sender's device model.
+  - **deviceType** (string) - Sender's device type.
+  - **fingerprint** (string) - Unique identifier for the sender.
+  - **port** (integer) - Port used by the sender.
+  - **protocol** (string) - Protocol used (e.g., "https").
+  - **download** (boolean) - Indicates if this is a download preparation.
+- **files** (object) - A map of file objects to be transferred.
+  - **[fileId]** (object) - Details for each file.
+    - **id** (string) - Unique identifier for the file.
+    - **fileName** (string) - Name of the file.
+    - **size** (integer) - Size of the file in bytes.
+    - **fileType** (string) - MIME type of the file.
+    - **sha256** (string) - SHA256 hash of the file.
+    - **preview** (any) - Optional preview data.
+    - **metadata** (object) - Optional file metadata.
+      - **modified** (string) - Last modified timestamp.
+      - **accessed** (string) - Last accessed timestamp.
+
+### Request Example
+```json
+{
+  "info": {
+    "alias": "Nice Orange",
+    "version": "2.0",
+    "deviceModel": "Samsung",
+    "deviceType": "mobile",
+    "fingerprint": "abc123fingerprint",
+    "port": 53317,
+    "protocol": "https",
+    "download": false
+  },
+  "files": {
+    "file-001": {
+      "id": "file-001",
+      "fileName": "photo.jpg",
+      "size": 2048000,
+      "fileType": "image/jpeg",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb924",
+      "preview": null,
+      "metadata": {
+        "modified": "2024-06-01T10:00:00Z",
+        "accessed": "2024-06-15T08:30:00Z"
+      }
+    },
+    "file-002": {
+      "id": "file-002",
+      "fileName": "document.pdf",
+      "size": 512000,
+      "fileType": "application/pdf",
+      "sha256": "a665a45920422f9d417e4867efdc4fb8",
+      "preview": null
+    }
+  }
+}
+```
+
+### Response
+#### Success Response (200)
+- **sessionId** (string) - The unique identifier for the upload session.
+- **files** (object) - A map of file IDs to their respective upload tokens.
+  - **[fileId]** (string) - The token for uploading the corresponding file.
+
+#### Response Example
+```json
+{
+  "sessionId": "sess-abc-123",
+  "files": {
+    "file-001": "token-aaa-111",
+    "file-002": "token-bbb-222"
+  }
+}
+```
+
+### Error Codes
+- 204 - No file transfer needed (all files already exist)
+- 400 - Invalid request body
+- 401 - PIN required or PIN is invalid
+- 403 - Rejected by the receiver
+- 409 - Another session is currently active
+- 429 - Too many requests
+- 500 - Unknown receiver error
+```
+
+--------------------------------
+
+### Initiate Upload Session with Metadata
+
+Source: https://context7.com/localsend/protocol/llms.txt
+
+Send metadata to the receiver to initiate a file upload session. This includes information about the sender device and the files to be transferred. Ensure the correct port and protocol are used.
+
+```bash
+curl -X POST "https://192.168.1.10:53317/api/localsend/v2/prepare-upload" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "info": {
+      "alias": "Nice Orange",
+      "version": "2.0",
+      "deviceModel": "Samsung",
+      "deviceType": "mobile",
+      "fingerprint": "abc123fingerprint",
+      "port": 53317,
+      "protocol": "https",
+      "download": false
+    },
+    "files": {
+      "file-001": {
+        "id": "file-001",
+        "fileName": "photo.jpg",
+        "size": 2048000,
+        "fileType": "image/jpeg",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb924",
+        "preview": null,
+        "metadata": {
+          "modified": "2024-06-01T10:00:00Z",
+          "accessed": "2024-06-15T08:30:00Z"
+        }
+      },
+      "file-002": {
+        "id": "file-002",
+        "fileName": "document.pdf",
+        "size": 512000,
+        "fileType": "application/pdf",
+        "sha256": "a665a45920422f9d417e4867efdc4fb8",
+        "preview": null
+      }
+    }
+  }'
+```
+
+--------------------------------
+
+### Prepare Upload Request (JSON)
+
+Source: https://github.com/localsend/protocol/blob/main/README.md
+
+Send metadata to the receiver to initiate a file upload. The receiver decides whether to accept, partially accept, or reject the request. A PIN can be added as a query parameter if required.
+
+```json
+{
+  "info": {
+    "alias": "Nice Orange",
+    "version": "2.0", // protocol version (major.minor)
+    "deviceModel": "Samsung", // nullable
+    "deviceType": "mobile", // mobile | desktop | web | headless | server, nullable
+    "fingerprint": "random string", // ignored in HTTPS mode
+    "port": 53317,
+    "protocol": "https", // http | https
+    "download": true, // if download API (section 5.2, 5.3) is active (optional, default: false)
+  },
+  "files": {
+    "some file id": {
+      "id": "some file id",
+      "fileName": "my image.png",
+      "size": 324242, // bytes
+      "fileType": "image/jpeg",
+      "sha256": "*sha256 hash*", // nullable
+      "preview": "*preview data*", // nullable
+      "metadata": { // nullable
+        "modified": "2021-01-01T12:34:56Z", // nullable
+        "accessed": "2021-01-01T12:34:56Z", // nullable
+      }
+    },
+    "another file id": {
+      "id": "another file id",
+      "fileName": "another image.jpg",
+      "size": 1234,
+      "fileType": "image/jpeg",
+      "sha256": "*sha256 hash*",
+      "preview": "*preview data*"
+    }
+  }
+}
+```
+
+--------------------------------
+
+### Download File Content
+
+Source: https://context7.com/localsend/protocol/llms.txt
+
+Retrieve the binary content of a specific file from the sender's server. Use the sessionId and fileId obtained from `/prepare-download`. This endpoint can also be accessed directly via a browser.
+
+```bash
+# Download a specific file using sessionId and fileId
+curl -X GET "http://192.168.1.20:53317/api/localsend/v2/download?sessionId=dl-sess-xyz-789&fileId=file-001" \
+  -o photo.jpg
+```
+
+--------------------------------
+
+### HTTP Device Registration for Discovery (Legacy Mode)
+
+Source: https://context7.com/localsend/protocol/llms.txt
+
+When UDP multicast is unavailable, devices can discover each other by sending HTTP POST requests to potential IP addresses in the local subnet. The target device responds with its information if it's a LocalSend member.
+
+```bash
+for ip in 192.168.1.{1..254}; do
+  curl -s -X POST "https://$ip:53317/api/localsend/v2/register" \
+    -H "Content-Type: application/json" \
+    --connect-timeout 1 \
+    -d '{ "alias": "Secret Banana", "version": "2.0", "deviceModel": "Windows", "deviceType": "desktop", "fingerprint": "xyz789fingerprint", "port": 53317, "protocol": "https", "download": false }' && echo " -> $ip responded"
+done
+```
+
+--------------------------------
+
+### HTTP Discovery (Legacy Mode)
+
+Source: https://github.com/localsend/protocol/blob/main/README.md
+
+This method is used for device discovery when multicast has failed. Devices are discovered by sending a request to all local IP addresses.
+
+```APIDOC
+## HTTP Discovery (Legacy Mode)
+
+### Description
+Used when multicast discovery is unsuccessful. Devices are discovered by sending this request to all local IP addresses.
+
+### Method
+POST
+
+### Endpoint
+`/api/localsend/v2/register`
+
+### Request Body
+```json5
+{
+  "alias": "Secret Banana",
+  "version": "2.0",
+  "deviceModel": "Windows",
+  "deviceType": "desktop",
+  "fingerprint": "random string",
+  "port": 53317,
+  "protocol": "https",
+  "download": true
+}
+```
+
+### Response Body
+```json5
+{
+  "alias": "Nice Orange",
+  "version": "2.0",
+  "deviceModel": "Samsung",
+  "deviceType": "mobile",
+  "fingerprint": "random string",
+  "download": true
+}
+```
+```
+
+--------------------------------
+
+### Prepare Upload Response (JSON)
+
+Source: https://github.com/localsend/protocol/blob/main/README.md
+
+Response from the prepare upload request, containing a session ID and file tokens for subsequent uploads.
+
+```json
+{
+  "sessionId": "mySessionId",
+  "files": {
+    "someFileId": "someFileToken",
+    "someOtherFileId": "someOtherFileToken"
+  }
+}
+```
+
+--------------------------------
+
+### Upload File Request (Binary)
+
+Source: https://github.com/localsend/protocol/blob/main/README.md
+
+Send the actual file data to the receiver using the session ID, file ID, and token obtained from the prepare upload step. This route can be called in parallel.
+
+```text
+Binary data
+```
+
+--------------------------------
+
+### UDP Multicast Announcement for Device Discovery
+
+Source: https://context7.com/localsend/protocol/llms.txt
+
+Devices announce their presence on the network by broadcasting a JSON payload over UDP. Other LocalSend members listen for these announcements and respond via HTTP POST.
+
+```json
+{ "alias": "Nice Orange", "version": "2.0", "deviceModel": "Samsung", "deviceType": "mobile", "fingerprint": "abc123fingerprint", "port": 53317, "protocol": "https", "download": true, "announce": true }
+```
+
+```bash
+curl -X POST https://192.168.1.42:53317/api/localsend/v2/register \
+  -H "Content-Type: application/json" \
+  -d '{ "alias": "Secret Banana", "version": "2.0", "deviceModel": "Windows", "deviceType": "desktop", "fingerprint": "xyz789fingerprint", "port": 53317, "protocol": "https", "download": false }'
+```
+
+--------------------------------
+
+### Download Multiple Files
+
+Source: https://context7.com/localsend/protocol/llms.txt
+
+Demonstrates how to download multiple files in parallel using curl with background jobs. This method utilizes the `/api/localsend/v2/download` endpoint.
+
+```APIDOC
+## GET /api/localsend/v2/download
+
+### Description
+Initiates the download of a specific file associated with a given session.
+
+### Method
+GET
+
+### Endpoint
+`/api/localsend/v2/download?sessionId={sessionId}&fileId={fileId}`
+
+### Parameters
+#### Query Parameters
+- **sessionId** (string) - Required - The identifier for the download session.
+- **fileId** (string) - Required - The identifier for the file to be downloaded.
+
+### Request Example
+```bash
+curl -X GET "http://192.168.1.20:53317/api/localsend/v2/download?sessionId=dl-sess-xyz-789&fileId=file-001" -o photo.jpg &
+curl -X GET "http://192.168.1.20:53317/api/localsend/v2/download?sessionId=dl-sess-xyz-789&fileId=file-002" -o document.pdf &
+wait
+```
+
+### Response
+#### Success Response (200)
+- **binary file content** - The content of the requested file.
+```
+
+--------------------------------
+
+### Upload File Content
+
+Source: https://context7.com/localsend/protocol/llms.txt
+
+Transfer the binary content of a file using the sessionId and file-specific token obtained from `/prepare-upload`. Files can be uploaded concurrently.
+
+```bash
+# Upload file-001
+curl -X POST "https://192.168.1.10:53317/api/localsend/v2/upload?sessionId=sess-abc-123&fileId=file-001&token=token-aaa-111" \
+  -H "Content-Type: application/octet-stream" \
+  --data-binary @/path/to/photo.jpg
+```
+
+```bash
+# Upload file-002 in parallel
+curl -X POST "https://192.168.1.10:53317/api/localsend/v2/upload?sessionId=sess-abc-123&fileId=file-002&token=token-bbb-222" \
+  -H "Content-Type: application/octet-stream" \
+  --data-binary @/path/to/document.pdf
+```
+
+--------------------------------
+
+### Download File
+
+Source: https://context7.com/localsend/protocol/llms.txt
+
+Downloads the binary content of a specific file from the sender's server. Requires sessionId and fileId from /prepare-download.
+
+```APIDOC
+## GET /api/localsend/v2/download
+
+### Description
+Downloads the actual binary content of a specific file from the sender's HTTP server. Use the `sessionId` and `fileId` from `/prepare-download`. Multiple files can be downloaded concurrently. This endpoint is also reachable directly from a browser at `http://<sender-ip>:<sender-port>`.
+
+### Method
+GET
+
+### Endpoint
+/api/localsend/v2/download
+
+### Parameters
+#### Query Parameters
+- **sessionId** (string) - Required - The unique identifier for the download session.
+- **fileId** (string) - Required - The unique identifier for the file to download.
+
+### Request Example
+```bash
+# Download a specific file using sessionId and fileId
+curl -X GET "http://192.168.1.20:53317/api/localsend/v2/download?sessionId=dl-sess-xyz-789&fileId=file-001" \
+  -o photo.jpg
+```
+
+### Response
+#### Success Response (200)
+- The raw binary content of the requested file.
+```
+
+--------------------------------
+
+### UDP Multicast Announcement - Device Discovery
+
+Source: https://context7.com/localsend/protocol/llms.txt
+
+Devices announce their presence on the network via UDP multicast. Other devices respond with an HTTP POST to the announcing device's registration endpoint.
+
+```APIDOC
+## UDP Multicast Announcement — Device Discovery (Default)
+
+Devices announce their presence on the local network by broadcasting a JSON message to the multicast group `224.0.0.167:53317` over UDP. Other LocalSend members listening on the group receive the announcement and respond with their own device information via an HTTP POST to `/api/localsend/v2/register` on the announcing device.
+
+### Request Example (UDP Payload)
+```json
+{
+  "alias": "Nice Orange",
+  "version": "2.0",
+  "deviceModel": "Samsung",
+  "deviceType": "mobile",
+  "fingerprint": "abc123fingerprint",
+  "port": 53317,
+  "protocol": "https",
+  "download": true,
+  "announce": true
+}
+```
+
+### Request Example (HTTP Response to Announcement)
+```bash
+curl -X POST https://192.168.1.42:53317/api/localsend/v2/register \
+  -H "Content-Type: application/json" \
+  -d '{
+    "alias": "Secret Banana",
+    "version": "2.0",
+    "deviceModel": "Windows",
+    "deviceType": "desktop",
+    "fingerprint": "xyz789fingerprint",
+    "port": 53317,
+    "protocol": "https",
+    "download": false
+  }'
+```
+
+### Response Example (Success)
+```json
+{
+  "alias": "Nice Orange",
+  "version": "2.0",
+  "deviceModel": "Samsung",
+  "deviceType": "mobile",
+  "fingerprint": "abc123fingerprint",
+  "download": true
+}
+```
+```
+
+--------------------------------
+
+### Download File Request and Response
+
+Source: https://github.com/localsend/protocol/blob/main/README.md
+
+This endpoint is used to download a specific file using the session ID and file ID obtained from the prepare download request. It supports parallel calls.
+
+```text
+No body
+```
+
+```text
+Binary data
+```
+
+--------------------------------
+
+### Download multiple files in parallel
+
+Source: https://context7.com/localsend/protocol/llms.txt
+
+Use curl with background jobs and wait to download multiple files concurrently. Ensure the session ID and file IDs are correct.
+
+```bash
+curl -X GET "http://192.168.1.20:53317/api/localsend/v2/download?sessionId=dl-sess-xyz-789&fileId=file-001" \
+  -o photo.jpg &
+curl -X GET "http://192.168.1.20:53317/api/localsend/v2/download?sessionId=dl-sess-xyz-789&fileId=file-002" \
+  -o document.pdf &
+wait
+```
+
+--------------------------------
+
+### Query device info for debugging
+
+Source: https://context7.com/localsend/protocol/llms.txt
+
+Use curl to query device information for debugging purposes. This endpoint is retained for diagnostics and was the original discovery route in v1.
+
+```bash
+# Query device info for debugging
+curl -X GET "https://192.168.1.10:53317/api/localsend/v2/info"
+```
+
+--------------------------------
+
+### HTTP POST Request for Registration
+
+Source: https://github.com/localsend/protocol/blob/main/README.md
+
+Used for device registration, either as a fallback for Multicast UDP or as the primary method in legacy mode. Requires receiver's IP address.
+
+```json5
+{
+  "alias": "Secret Banana",
+  "version": "2.0",
+  "deviceModel": "Windows",
+  "deviceType": "desktop",
+  "fingerprint": "random string", // ignored in HTTPS mode
+  "port": 53317,
+  "protocol": "https",
+  "download": true, // if download API (section 5.2, 5.3) is active (optional, default: false)
+}
+```
+
+--------------------------------
+
+### Upload API: Prepare File Transfer
+
+Source: https://context7.com/localsend/protocol/llms.txt
+
+The sender initiates a file transfer by sending file metadata to the receiver. The receiver responds with a session ID and tokens for the actual upload. PIN protection can be enabled by appending `?pin=123456` to the URL.
+
+```bash
+# Example payload for POST /api/localsend/v2/prepare-upload
+{
+  "files": [
+    {
+      "name": "document.pdf",
+      "size": 102400,
+      "type": "application/pdf"
+    }
+  ],
+  "pin": "123456" 
+}
+```
+
+--------------------------------
+
+### POST /api/localsend/v2/prepare-upload - Upload API: Prepare Transfer
+
+Source: https://context7.com/localsend/protocol/llms.txt
+
+The sender initiates a file transfer by sending file metadata to the receiver. The receiver responds with a session ID and tokens for the actual upload, or indicates rejection.
+
+```APIDOC
+## `POST /api/localsend/v2/prepare-upload` — Upload API: Prepare Transfer
+
+The sender initiates a file transfer by sending file metadata to the receiver. The receiver decides whether to accept, partially accept, or reject the transfer. On success, the receiver returns a session ID and per-file tokens used for the actual upload. If the receiver requires a PIN, append `?pin=123456` to the URL.
+
+### Method
+POST
+
+### Endpoint
+`/api/localsend/v2/prepare-upload`
+
+### Parameters
+#### Query Parameters
+- **pin** (string) - Optional. The PIN required for transfer authorization.
+```
+
+--------------------------------
+
+### Send File
+
+Source: https://github.com/localsend/protocol/blob/main/README.md
+
+The file transfer endpoint. Use the sessionId, fileId, and token obtained from the /prepare-upload endpoint. This route can be called in parallel.
+
+```APIDOC
+## POST /api/localsend/v2/upload
+
+### Description
+Transfers the actual file data. Requires session, file, and token identifiers obtained from the preparation step. This endpoint is designed to handle parallel requests.
+
+### Method
+POST
+
+### Endpoint
+/api/localsend/v2/upload
+
+### Parameters
+#### Query Parameters
+- **sessionId** (string) - Required - The session identifier.
+- **fileId** (string) - Required - The identifier of the file to upload.
+- **token** (string) - Required - The token associated with the file for authentication.
+
+### Request Body
+Binary data of the file.
+
+### Response
+#### Success Response (200)
+No body.
+
+### Errors
+- **400** - Missing parameters
+- **403** - Invalid token or IP address
+- **409** - Blocked by another session
+- **500** - Unknown error by receiver
+```
+
+--------------------------------
+
+### Multicast Discovery Response (HTTP/TCP)
+
+Source: https://github.com/localsend/protocol/blob/main/README.md
+
+The HTTP/TCP request sent by a LocalSend member to register with the originating device after receiving a multicast announcement.
+
+```APIDOC
+## Multicast Discovery Response (HTTP/TCP)
+
+### Description
+An HTTP/TCP request sent to the originating device to register and share information after a multicast announcement is received.
+
+### Method
+POST
+
+### Endpoint
+`/api/localsend/v2/register`
+
+### Request Body
+```json5
+{
+  "alias": "Secret Banana",
+  "version": "2.0",
+  "deviceModel": "Windows",
+  "deviceType": "desktop",
+  "fingerprint": "random string",
+  "port": 53317,
+  "protocol": "https",
+  "download": true
+}
+```
+```
+
+--------------------------------
+
+### Info
+
+Source: https://github.com/localsend/protocol/blob/main/README.md
+
+Retrieves general information about the sender device. Primarily for debugging purposes.
+
+```APIDOC
+## GET /api/localsend/v2/info
+
+### Description
+Provides information about the sender device. This endpoint is mainly for debugging and has been superseded by `/register` for discovery.
+
+### Method
+GET
+
+### Endpoint
+/api/localsend/v2/info
+
+### Response
+#### Success Response (200)
+- **alias** (string) - Alias of the sender device.
+- **version** (string) - Version of the LocalSend protocol.
+- **deviceModel** (string) - Model of the sender device (nullable).
+- **deviceType** (string) - Type of the sender device (mobile | desktop | web | headless | server, nullable).
+- **fingerprint** (string) - A unique fingerprint for the device.
+- **download** (boolean) - Indicates if download APIs are active (optional, default: false).
+```
+
+--------------------------------
+
+### Download File
+
+Source: https://github.com/localsend/protocol/blob/main/README.md
+
+Receives the actual file data for a specific file ID within a given session.
+
+```APIDOC
+## GET /api/localsend/v2/download
+
+### Description
+Retrieves the binary data of a file. This endpoint is designed to be called in parallel for multiple files.
+
+### Method
+GET
+
+### Endpoint
+/api/localsend/v2/download
+
+### Parameters
+#### Query Parameters
+- **sessionId** (string) - Required - The session identifier obtained from `/prepare-download`.
+- **fileId** (string) - Required - The identifier of the file to download, obtained from `/prepare-download`.
+
+### Request Example
+```text
+No body
+```
+
+### Response
+#### Success Response (200)
+- **Binary data** - The raw binary content of the requested file.
+```
+
+--------------------------------
+
+### Upload File
+
+Source: https://context7.com/localsend/protocol/llms.txt
+
+Transfers the actual binary content of a file to the receiver. Requires sessionId and file token obtained from /prepare-upload.
+
+```APIDOC
+## POST /api/localsend/v2/upload
+
+### Description
+Transfers the actual binary content of a file to the receiver. Use the `sessionId` and file-specific `token` obtained from `/prepare-upload`. Multiple files can be uploaded in parallel by making concurrent requests.
+
+### Method
+POST
+
+### Endpoint
+/api/localsend/v2/upload
+
+### Parameters
+#### Query Parameters
+- **sessionId** (string) - Required - The unique identifier for the upload session.
+- **fileId** (string) - Required - The unique identifier for the file being uploaded.
+- **token** (string) - Required - The token for authenticating the upload of this specific file.
+
+### Request Body
+- The raw binary content of the file.
+
+### Request Example
+```bash
+# Upload file-001
+curl -X POST "https://192.168.1.10:53317/api/localsend/v2/upload?sessionId=sess-abc-123&fileId=file-001&token=token-aaa-111" \
+  -H "Content-Type: application/octet-stream" \
+  --data-binary @/path/to/photo.jpg
+```
+
+### Response
+#### Success Response (200)
+- No response body.
+
+### Error Codes
+- 400 - Missing query parameters
+- 403 - Invalid token or IP address mismatch
+- 409 - Session blocked by another session
+- 500 - Unknown receiver error
+```
+
+--------------------------------
+
+### HTTP Legacy Mode Response
+
+Source: https://github.com/localsend/protocol/blob/main/README.md
+
+Response to an HTTP legacy mode discovery request. Provides information about the responding device.
+
+```json5
+{
+  "alias": "Nice Orange",
+  "version": "2.0",
+  "deviceModel": "Samsung",
+  "deviceType": "mobile",
+  "fingerprint": "random string", // ignored in HTTPS mode
+  "download": true, // if download API (section 5.2, 5.3) is active (optional, default: false)
+}
+```
+
+--------------------------------
+
+### Multicast Discovery Announcement
+
+Source: https://github.com/localsend/protocol/blob/main/README.md
+
+This is the message sent by a LocalSend device to announce its presence on the network via multicast UDP.
+
+```APIDOC
+## Multicast Discovery Announcement
+
+### Description
+Sent at the start of the app to the multicast group to announce the device's presence.
+
+### Message Format
+```json5
+{
+  "alias": "Nice Orange",
+  "version": "2.0",
+  "deviceModel": "Samsung",
+  "deviceType": "mobile",
+  "fingerprint": "random string",
+  "port": 53317,
+  "protocol": "https",
+  "download": true,
+  "announce": true
+}
+```
+```
+
+--------------------------------
+
+### Generate LocalSend fingerprint
+
+Source: https://context7.com/localsend/protocol/llms.txt
+
+Generates a LocalSend fingerprint. For HTTPS, it's the SHA-256 hash of the certificate; for HTTP, it's a random string. Ensure the correct mode and certificate bytes are provided.
+
+```python
+import hashlib
+import ssl
+import random
+import string
+
+def get_fingerprint(use_https: bool, cert_der_bytes: bytes = None) -> str:
+    """
+    Generate the LocalSend fingerprint for this device.
+    - HTTPS mode: SHA-256 hash of the DER-encoded certificate
+    - HTTP mode: random string
+    """
+    if use_https and cert_der_bytes:
+        return hashlib.sha256(cert_der_bytes).hexdigest()
+    else:
+        # Generate a random string for HTTP mode
+        return ''.join(random.choices(string.ascii_letters + string.digits, k=32))
+
+# Example: HTTP mode fingerprint
+fp_http = get_fingerprint(use_https=False)
+print(f"HTTP fingerprint: {fp_http}")
+# HTTP fingerprint: xK7mP2qRnLvT9wBsYeAcUjDgFhZiNoWQ
+
+# Example: HTTPS mode fingerprint from a self-signed cert
+with open("localsend_cert.der", "rb") as f:
+    cert_bytes = f.read()
+fp_https = get_fingerprint(use_https=True, cert_der_bytes=cert_bytes)
+print(f"HTTPS fingerprint: {fp_https}")
+# HTTPS fingerprint: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+```
+
+--------------------------------
+
+### Multicast Discovery Response (UDP)
+
+Source: https://github.com/localsend/protocol/blob/main/README.md
+
+A fallback response method where members reply with a Multicast/UDP message after receiving an announcement.
+
+```APIDOC
+## Multicast Discovery Response (UDP)
+
+### Description
+A fallback response method using Multicast/UDP, sent by LocalSend members after receiving an announcement.
+
+### Message Format
+```json5
+{
+  "alias": "Secret Banana",
+  "version": "2.0",
+  "deviceModel": "Windows",
+  "deviceType": "desktop",
+  "fingerprint": "random string",
+  "port": 53317,
+  "protocol": "https",
+  "download": true,
+  "announce": false
+}
+```
+```
+
+--------------------------------
+
+### Browser Download URL
+
+Source: https://github.com/localsend/protocol/blob/main/README.md
+
+URL format for the reverse file transfer (download API) where the receiver can download files directly from the sender's HTTP server.
+
+```url
+http://<sender-ip>:<sender-port>
+```
+
+--------------------------------
+
+### Multicast UDP Response
+
+Source: https://github.com/localsend/protocol/blob/main/README.md
+
+A fallback response mechanism for Multicast UDP discovery. Sent by devices that receive an announcement and are configured to announce themselves.
+
+```json5
+{
+  "alias": "Secret Banana",
+  "version": "2.0",
+  "deviceModel": "Windows",
+  "deviceType": "desktop",
+  "fingerprint": "random string",
+  "port": 53317,
+  "protocol": "https",
+  "download": true,
+  "announce": false,
+}
+```
