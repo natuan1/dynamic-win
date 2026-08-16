@@ -377,6 +377,8 @@ public sealed class LocalSendService(ISettingsStore settingsStore) : IApplicatio
     {
         if (http == null) return;
 
+        if (GetIpv4InterfaceAddresses().Any(local => local.ToString() == address)) return;
+
         foreach (var scheme in new[] { "https", "http" })
         {
             try
