@@ -29,6 +29,10 @@ namespace DynamicWin.UI.UIElements.Custom
         bool isSelected = false;
         public bool IsSelected { get => isSelected; }
 
+        // Set when the tile got selected mid-drag (cursor crossed it while the
+        // button was held) instead of via a discrete click.
+        internal bool selectedByDrag;
+
         public static TrayFile lastSelected;
 
         Tray tray;
@@ -148,6 +152,20 @@ namespace DynamicWin.UI.UIElements.Custom
 
         public override void OnMouseDown()
         {
+            var gestureMoved = tray.IsMouseDown && Vec2.Distance(Runtime.CursorPosition, tray.MouseDownPosition) >= 10f;
+
+            if (gestureMoved)
+            {
+                // Paint selection: the button is held while the cursor crosses tiles.
+                tray.MarkDragAnchorSelected();
+                selectedByDrag = true;
+                wasSelected = false;
+                isSelected = true;
+                return;
+            }
+
+            tray.dragAnchor = this;
+
             if (!isSelected) isSelected = true;
             else return;
 
@@ -160,6 +178,10 @@ namespace DynamicWin.UI.UIElements.Custom
                     int indexLast = 0;
                     if (TrayFile.lastSelected != null)
                         indexLast = tray.fileObjects.IndexOf(TrayFile.lastSelected);
+
+                    // The static anchor can point at a tile from a rebuilt menu or
+                    // a removed file; IndexOf then returns -1 and must not be used.
+                    if (indexLast < 0) indexLast = tray.fileObjects.IndexOf(this);
 
                     lastSelected = this;
                     var newIndex = tray.fileObjects.IndexOf(this);
@@ -200,12 +222,19 @@ namespace DynamicWin.UI.UIElements.Custom
 
         public override void OnGlobalMouseUp()
         {
-            if (!IsHovering)
+            if (IsHovering) return;
+
+            if (selectedByDrag)
             {
-                if(!(KeyHandler.keyDown.Contains(Keys.LControlKey) || KeyHandler.keyDown.Contains(Keys.RControlKey)
-                    || KeyHandler.keyDown.Contains(Keys.LShiftKey) || KeyHandler.keyDown.Contains(Keys.RShiftKey)))
-                    isSelected = false;
+                // Selected mid-drag: keep it through this release, then revert to
+                // normal click semantics.
+                selectedByDrag = false;
+                return;
             }
+
+            if(!(KeyHandler.keyDown.Contains(Keys.LControlKey) || KeyHandler.keyDown.Contains(Keys.RControlKey)
+                || KeyHandler.keyDown.Contains(Keys.LShiftKey) || KeyHandler.keyDown.Contains(Keys.RShiftKey)))
+                isSelected = false;
         }
 
         public override void Draw(SKCanvas canvas)

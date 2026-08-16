@@ -158,7 +158,9 @@ namespace DynamicWin.Main
 
             if (MainIsland.hidden) return;
 
-            foreach (UIObject uiObject in objects)
+            // Snapshot: a mouse event inside UpdateCall can swap menus or rebuild
+            // the renderer (drag-out), which would mutate the list mid-enumeration.
+            foreach (UIObject uiObject in objects.ToArray())
             {
                 uiObject.UpdateCall(DeltaTime);
             }
@@ -191,7 +193,7 @@ namespace DynamicWin.Main
             if (MainIsland.hidden) return;
 
             bool hasContextMenu = false;
-            foreach (UIObject uiObject in objects)
+            foreach (UIObject uiObject in objects.ToArray())
             {
                 canvas.RestoreToCount(canvasWithoutClip);
                 canvasWithoutClip = canvas.Save();
