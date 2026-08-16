@@ -21,6 +21,10 @@ namespace DynamicWin
         [STAThread]
         public static void Main()
         {
+            // Elevated firewall-install relaunch: must exit before the
+            // single-instance mutex would reject this child process.
+            if (LocalSend.LocalSendFirewall.TryHandleInstallArg()) return;
+
             DynamicWinMain m = new DynamicWinMain();
             m.Run();
         }

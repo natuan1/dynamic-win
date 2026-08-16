@@ -81,8 +81,18 @@ namespace DynamicWin.UI.UIElements.Custom
         }
 
         Vec2 mouseDownPos = Vec2.zero;
-        bool isDragging = false;
         bool canDrag = false;
+
+        // Tile the current press started on, so a drag that paints a selection
+        // can also protect that first tile from deselect-on-release.
+        internal TrayFile? dragAnchor;
+
+        internal Vec2 MouseDownPosition => mouseDownPos;
+
+        internal void MarkDragAnchorSelected()
+        {
+            if (dragAnchor != null) dragAnchor.selectedByDrag = true;
+        }
 
         public override void OnMouseDown()
         {
@@ -90,6 +100,7 @@ namespace DynamicWin.UI.UIElements.Custom
 
             mouseDownPos = new Vec2(Runtime.CursorPosition.X, Runtime.CursorPosition.Y);
             canDrag = true;
+            dragAnchor = null;
         }
 
         void OnScroll(MouseWheelEventArgs e)
@@ -162,41 +173,39 @@ namespace DynamicWin.UI.UIElements.Custom
                 }
             });
 
-            if (!isDragging && canDrag && IsMouseDown && Vec2.Distance(Runtime.CursorPosition, mouseDownPos) >= 25)
+            // Dragging across tiles selects them (TrayFile.OnMouseDown); the OLE
+            // drag-out only starts once the cursor actually leaves the tray area.
+            // StartDrag runs a modal loop and then rebuilds the renderer, so it
+            // must be deferred: calling it synchronously here would clear the
+            // menu object list while the render loop is still enumerating it.
+            if (canDrag && IsMouseDown && !IsHovering && Vec2.Distance(Runtime.CursorPosition, mouseDownPos) >= 10)
             {
-                isDragging = true;
+                canDrag = false;
 
                 List<string> draggedFiles = new List<string>();
                 fileObjects.ForEach((f) =>
                 {
-                    if (f.IsSelected)
-                    {
-                        if(File.Exists(f.FileName))
-                        {
-                            draggedFiles.Add(f.FileName);
-                        }
-                    }
+                    if (f.IsSelected && File.Exists(f.FileName))
+                        draggedFiles.Add(f.FileName);
                 });
 
-                Runtime.StartDrag(draggedFiles.ToArray(), () =>
+                if (draggedFiles.Count > 0)
                 {
-                    List<TrayFile> toRemove = new List<TrayFile>();
-                    fileObjects.ForEach((f) =>
+                    System.Windows.Threading.Dispatcher.CurrentDispatcher.BeginInvoke(new Action(() =>
                     {
-                        if (draggedFiles.Contains(f.FileName))
+                        Runtime.StartDrag(draggedFiles.ToArray(), () =>
                         {
-                            toRemove.Add(f);
-                        }
-                    });
+                            List<TrayFile> toRemove = new List<TrayFile>();
+                            fileObjects.ForEach((f) =>
+                            {
+                                if (draggedFiles.Contains(f.FileName))
+                                    toRemove.Add(f);
+                            });
 
-                    toRemove.ForEach((x) => RemoveFileObject(x));
-
-                });
-
-                isDragging = false;
-                canDrag = false;
-
-                AddFileObjects();
+                            toRemove.ForEach((x) => RemoveFileObject(x));
+                        });
+                    }));
+                }
             }
 
             new List<TrayFile>(fileObjects).ForEach((f) =>
@@ -274,6 +283,8 @@ namespace DynamicWin.UI.UIElements.Custom
 
             if(fileObjects.Contains(file)) fileObjects.Remove(file);
             if(selectedFiles.Contains(file)) selectedFiles.Remove(file);
+            if (TrayFile.lastSelected == file) TrayFile.lastSelected = null;
+            if (dragAnchor == file) dragAnchor = null;
 
             file.SetActive(false);
         }

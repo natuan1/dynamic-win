@@ -267,7 +267,7 @@ namespace DynamicWin.Main
             {
                 DropFileMenu.Drop(e);
                 runtime.QueueOpenMenu(Res.HomeMenu);
-                Res.HomeMenu.isWidgetMode = false;
+                Res.HomeMenu.mode = HomeMode.Tray;
             }
         }
 
