@@ -10,8 +10,10 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using System.IO;
+using System.Linq;
 using System.Net;
 using System.Net.Http;
+using System.Net.NetworkInformation;
 using System.Net.Sockets;
 using System.Text;
 
@@ -247,14 +249,45 @@ public sealed class LocalSendService(ISettingsStore settingsStore) : IApplicatio
             var announcement = Self.Clone();
             announcement.Announce = true;
             var payload = Encoding.UTF8.GetBytes(announcement.ToJson());
+            var joined = new HashSet<IPAddress>();
 
             while (!token.IsCancellationRequested)
             {
-                try { client.SendTo(payload, SocketFlags.None, endpoint); } catch { }
+                // Windows routes multicast through one default interface (a VPN
+                // adapter here would swallow it), so announce and listen on
+                // every live IPv4 interface instead.
+                var interfaces = GetIpv4InterfaceAddresses();
+                Log($"Announcing on: {(interfaces.Count > 0 ? string.Join(", ", interfaces) : "no IPv4 interface")}");
+
+                foreach (var local in interfaces)
+                {
+                    if (joined.Add(local))
+                    {
+                        try { client.SetSocketOption(SocketOptionLevel.IP, SocketOptionName.AddMembership, new MulticastOption(IPAddress.Parse(LocalSendProtocol.MulticastAddress), local)); } catch { }
+                    }
+
+                    try
+                    {
+                        client.SetSocketOption(SocketOptionLevel.IP, SocketOptionName.MulticastInterface, local.GetAddressBytes());
+                        client.SendTo(payload, SocketFlags.None, endpoint);
+                    }
+                    catch { }
+                }
 
                 registry.Prune(DateTime.UtcNow, TimeSpan.FromSeconds(60));
 
                 try { await Task.Delay(TimeSpan.FromSeconds(10), token); } catch { }
+            }
+        }, token);
+
+        _ = Task.Run(async () =>
+        {
+            try { await Task.Delay(TimeSpan.FromSeconds(5), token); } catch { return; }
+
+            while (!token.IsCancellationRequested)
+            {
+                try { await ScanSubnetAsync(token); } catch { }
+                try { await Task.Delay(TimeSpan.FromSeconds(45), token); } catch { }
             }
         }, token);
 
@@ -280,6 +313,71 @@ public sealed class LocalSendService(ISettingsStore settingsStore) : IApplicatio
                     HandleDatagram(buffer, received, (IPEndPoint)source);
                 }
             });
+        }
+    }
+
+    static List<IPAddress> GetIpv4InterfaceAddresses()
+    {
+        var result = new List<IPAddress>();
+        try
+        {
+            foreach (var nic in NetworkInterface.GetAllNetworkInterfaces())
+            {
+                if (nic.OperationalStatus != OperationalStatus.Up || nic.NetworkInterfaceType == NetworkInterfaceType.Loopback)
+                    continue;
+
+                foreach (var unicast in nic.GetIPProperties().UnicastAddresses)
+                {
+                    if (unicast.Address.AddressFamily != AddressFamily.InterNetwork) continue;
+                    result.Add(unicast.Address);
+                    break;
+                }
+            }
+        }
+        catch { }
+
+        return result;
+    }
+
+    // Fallback discovery for networks where multicast does not cross between
+    // WiFi and wired segments: probe the /24 of every local address for the
+    // LocalSend /info endpoint, over both https and http.
+    async Task ScanSubnetAsync(CancellationToken token)
+    {
+        foreach (var local in GetIpv4InterfaceAddresses())
+        {
+            var bytes = local.GetAddressBytes();
+            var prefix = $"{bytes[0]}.{bytes[1]}.{bytes[2]}";
+
+            var probes = Enumerable.Range(1, 254).Select(host => ProbeAddressAsync($"{prefix}.{host}", token));
+            try { await Task.WhenAll(probes); } catch { }
+            Log($"Scan pass done for {prefix}.0/24");
+        }
+    }
+
+    async Task ProbeAddressAsync(string address, CancellationToken token)
+    {
+        if (http == null) return;
+
+        foreach (var scheme in new[] { "https", "http" })
+        {
+            try
+            {
+                using var timeout = CancellationTokenSource.CreateLinkedTokenSource(token);
+                timeout.CancelAfter(TimeSpan.FromMilliseconds(900));
+                var json = await http.GetStringAsync(
+                    $"{scheme}://{address}:{LocalSendProtocol.DefaultHttpPort}{LocalSendProtocol.ApiBase}/info", timeout.Token);
+
+                var identity = DeviceIdentity.FromJson(json);
+                if (string.IsNullOrEmpty(identity?.Fingerprint) || identity.Fingerprint == Self.Fingerprint) return;
+
+                identity.Port = LocalSendProtocol.DefaultHttpPort;
+                identity.Protocol = scheme;
+                registry.AddOrUpdate(identity, address);
+                Log($"Scan found {identity.Alias} ({identity.Fingerprint}) at {address} via {scheme}");
+                return;
+            }
+            catch { }
         }
     }
 
