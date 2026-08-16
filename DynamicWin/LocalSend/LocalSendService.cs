@@ -23,6 +23,20 @@ public sealed class LocalSendService(ISettingsStore settingsStore) : IApplicatio
 {
     public static LocalSendService? Instance { get; private set; }
 
+    // Diagnostics only; safe to delete the file at any time.
+    public static readonly string LogPath = Path.Combine(Path.GetTempPath(), "DynamicWin.LocalSend.log");
+
+    static readonly object logGate = new();
+    static void Log(string message)
+    {
+        try
+        {
+            lock (logGate)
+                File.AppendAllText(LogPath, $"{DateTime.Now:HH:mm:ss.fff} {message}{Environment.NewLine}");
+        }
+        catch { }
+    }
+
     private readonly LocalSendDeviceRegistry registry = new();
     public LocalSendDeviceRegistry Registry => registry;
 
@@ -55,6 +69,8 @@ public sealed class LocalSendService(ISettingsStore settingsStore) : IApplicatio
 
         Instance = this;
 
+        EnsureFirewallRule();
+
         var fingerprint = settingsStore.Get<string>("localsend.fingerprint");
         if (string.IsNullOrEmpty(fingerprint))
         {
@@ -84,8 +100,33 @@ public sealed class LocalSendService(ISettingsStore settingsStore) : IApplicatio
         networkCts = new CancellationTokenSource();
 
         StartHttpServer();
+        Log($"Started: alias={Self.Alias} fingerprint={Self.Fingerprint} httpPort={HttpPort}");
+
         udp = CreateMulticastSocket();
+        Log(udp.LocalEndPoint is IPEndPoint { Port: LocalSendProtocol.MulticastPort }
+            ? "Multicast socket joined 224.0.0.167:53317"
+            : $"Multicast fallback socket ({udp.LocalEndPoint})");
+
         StartNetworkLoops();
+    }
+
+    void EnsureFirewallRule()
+    {
+        try
+        {
+            if (settingsStore.Get<bool>("localsend.firewall.declined")) return;
+        }
+        catch { }
+
+        if (LocalSendFirewall.EnsureRule()) return;
+
+        Log("Firewall install declined by user; saving localsend.firewall.declined");
+        try
+        {
+            settingsStore.Set("localsend.firewall.declined", true);
+            settingsStore.Save();
+        }
+        catch { }
     }
 
     public void Stop()
@@ -126,10 +167,18 @@ public sealed class LocalSendService(ISettingsStore settingsStore) : IApplicatio
 
                 var application = builder.Build();
 
-                application.MapPost(LocalSendProtocol.ApiBase + "/register", (HttpContext context, DeviceIdentity registration) =>
+                // DeviceIdentity uses Newtonsoft attributes on public fields, which the
+                // minimal-API System.Text.Json binder cannot map — parse the body manually.
+                application.MapPost(LocalSendProtocol.ApiBase + "/register", async (HttpContext context) =>
                 {
-                    if (registration.Fingerprint != Self.Fingerprint)
+                    using var reader = new StreamReader(context.Request.Body);
+                    var registration = DeviceIdentity.FromJson(await reader.ReadToEndAsync());
+
+                    if (registration?.Fingerprint is { Length: > 0 } fingerprint && fingerprint != Self.Fingerprint)
+                    {
+                        Log($"Register from {registration.Alias} ({fingerprint}) via {context.Connection.RemoteIpAddress}, port={registration.EffectivePort} protocol={registration.Protocol}");
                         registry.AddOrUpdate(registration, context.Connection.RemoteIpAddress?.ToString() ?? "");
+                    }
                     return Results.Json(Self.ToInfoResponse());
                 });
 
@@ -239,6 +288,8 @@ public sealed class LocalSendService(ISettingsStore settingsStore) : IApplicatio
         var identity = DeviceIdentity.FromJson(Encoding.UTF8.GetString(buffer, 0, length));
         if (identity == null || identity.Fingerprint == Self.Fingerprint) return;
 
+        Log($"Datagram from {identity.Alias} ({identity.Fingerprint}) at {remote.Address}, port={identity.EffectivePort} protocol={identity.Protocol} announce={identity.Announce}");
+
         registry.AddOrUpdate(identity, remote.Address.ToString() ?? "");
 
         if (identity.Announce == true)
@@ -314,11 +365,14 @@ public sealed class LocalSendService(ISettingsStore settingsStore) : IApplicatio
 
         try
         {
+            Log($"Send begin: target={alias} at {DeviceBaseUrl(device)}, files=[{string.Join(", ", filePaths)}]");
+
             SetState(LocalSendSendStatus.Preparing, $"Waiting for {alias} to accept…", 0, "");
 
             var files = filePaths.Where(File.Exists).ToList();
             if (files.Count == 0)
             {
+                Log("Send aborted: no existing files");
                 SetState(LocalSendSendStatus.Failed, "No files to send", 0, "");
                 return;
             }
@@ -366,6 +420,7 @@ public sealed class LocalSendService(ISettingsStore settingsStore) : IApplicatio
             }
             if (!prepareResponse.IsSuccessStatusCode)
             {
+                Log($"Prepare-upload failed: {(int)prepareResponse.StatusCode} {prepareResponse.ReasonPhrase}");
                 SetState(LocalSendSendStatus.Failed, $"{alias} responded with {(int)prepareResponse.StatusCode}", 0, "");
                 return;
             }
@@ -373,9 +428,12 @@ public sealed class LocalSendService(ISettingsStore settingsStore) : IApplicatio
             var payload = PrepareUploadResponse.FromJson(await prepareResponse.Content.ReadAsStringAsync(prepareTimeout.Token));
             if (payload == null || payload.Files.Count == 0)
             {
+                Log($"Prepare-upload accepted no files, body=({(payload == null ? "unparseable" : "empty file list")})");
                 SetState(LocalSendSendStatus.Rejected, $"{alias} accepted none of the files", 0, "");
                 return;
             }
+
+            Log($"Prepare-upload ok: sessionId={payload.SessionId}, {payload.Files.Count} file(s) accepted");
 
             lock (stateGate)
             {
@@ -414,23 +472,28 @@ public sealed class LocalSendService(ISettingsStore settingsStore) : IApplicatio
 
                 if (!uploadResponse.IsSuccessStatusCode)
                 {
+                    Log($"Upload failed for {fileName}: {(int)uploadResponse.StatusCode} {uploadResponse.ReasonPhrase}");
                     SetState(LocalSendSendStatus.Failed, $"{alias} upload failed ({(int)uploadResponse.StatusCode}): {fileName}", 0, fileName);
                     return;
                 }
 
+                Log($"Uploaded {fileName}");
                 sentCount++;
             }
 
             lock (stateGate) activeSessionId = null;
 
+            Log($"Send completed: {sentCount} file(s) to {alias}");
             SetState(LocalSendSendStatus.Completed, $"Sent {sentCount} file(s) to {alias}", 1, "");
         }
         catch (OperationCanceledException)
         {
+            Log("Send cancelled");
             SetState(LocalSendSendStatus.Cancelled, "Cancelled", 0, "");
         }
         catch (Exception exception)
         {
+            Log($"Send error: {exception}");
             SetState(LocalSendSendStatus.Failed, $"Error: {exception.Message}", 0, "");
         }
     }

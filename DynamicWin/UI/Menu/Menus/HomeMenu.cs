@@ -59,7 +59,7 @@ namespace DynamicWin.UI.Menu.Menus
 
         public override Vec2 IslandSizeBig()
         {
-            Vec2 size = new Vec2(275, 145);
+            Vec2 size = new Vec2(320, 145);
 
             {
                 float sizeTogetherBiggest = 0f;
@@ -162,7 +162,7 @@ namespace DynamicWin.UI.Menu.Menus
 
             bigMenuItems.Add(widgetButton);
 
-            trayButton = new DWTextImageButton(topContainer, Resources.Res.Tray, "Tray", new Vec2(112.5f, 0), new Vec2(57.5f, 20), () =>
+            trayButton = new DWTextImageButton(topContainer, Resources.Res.Tray, "Tray", new Vec2(123.75f, 0), new Vec2(57.5f, 20), () =>
             {
                 mode = HomeMode.Tray;
             },
@@ -177,7 +177,7 @@ namespace DynamicWin.UI.Menu.Menus
 
             bigMenuItems.Add(trayButton);
 
-            localSendButton = new DWTextImageButton(topContainer, Resources.Res.LocalSend, "LocalSend", new Vec2(190, 0), new Vec2(87.5f, 20), () =>
+            localSendButton = new DWTextImageButton(topContainer, Resources.Res.LocalSend, "LocalSend", new Vec2(211.25f, 0), new Vec2(87.5f, 20), () =>
             {
                 mode = HomeMode.LocalSend;
             },
