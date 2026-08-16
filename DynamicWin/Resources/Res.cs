@@ -34,6 +34,7 @@ namespace DynamicWin.Resources
         public static SKBitmap Settings;
         public static SKBitmap Tray;
         public static SKBitmap Widgets;
+        public static SKBitmap LocalSend;
         public static SKBitmap FileIcon;
         public static SKBitmap PlaceItem;
         public static SKBitmap Spotify;
@@ -99,6 +100,7 @@ namespace DynamicWin.Resources
             Settings = LoadImg("home\\Settings.png");
             Tray = LoadImg("home\\Tray.png");
             Widgets = LoadImg("home\\Widgets.png");
+            LocalSend = LoadImg("home\\LocalSend.png");
             FileIcon = LoadImg("home\\File.png");
             PlaceItem = LoadImg("home\\PlaceItem.png");
             Spotify = LoadImg("home\\Spotify.png");

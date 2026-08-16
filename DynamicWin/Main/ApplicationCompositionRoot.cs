@@ -1,3 +1,4 @@
+using DynamicWin.LocalSend;
 using DynamicWin.Platform;
 using DynamicWin.Resources;
 using DynamicWin.Utils;
@@ -15,6 +16,7 @@ internal sealed class ApplicationCompositionRoot(IPlatformAdapters platformAdapt
         var settingsDirectory = ApplicationDataPaths.SettingsDirectory;
         ISettingsStore settingsStore = SettingsStore.Open(settingsDirectory, "Settings.json");
         var services = new ApplicationServices(platformAdapters, settingsStore, settingsDirectory, updateStartupShortcut);
+        var localSend = new LocalSendService(settingsStore);
 
         return new ApplicationLifetime(
             new DelegateApplicationComponent(
@@ -31,6 +33,7 @@ internal sealed class ApplicationCompositionRoot(IPlatformAdapters platformAdapt
                 },
                 () => { }),
             new DelegateApplicationComponent(() => Settings.InitializeSettings(settingsStore), () => Settings.Save(settingsStore)),
+            localSend,
             new DelegateApplicationComponent(initializeAudio, () => { }),
             new DelegateApplicationComponent(KeyHandler.Start, KeyHandler.Stop),
             new DelegateApplicationComponent(

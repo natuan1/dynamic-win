@@ -12,6 +12,8 @@ using System.Windows.Forms;
 
 namespace DynamicWin.UI.Menu.Menus
 {
+    public enum HomeMode { Widgets, Tray, LocalSend }
+
     public class HomeMenu : BaseMenu
     {
         public List<SmallWidgetBase> smallLeftWidgets = new List<SmallWidgetBase>();
@@ -93,7 +95,8 @@ namespace DynamicWin.UI.Menu.Menus
                 size.Y = Math.Max(size.Y, sizeTogetherBiggest + topSpacing);
             }
 
-            if (!isWidgetMode) size.Y = 250;
+            if (mode != HomeMode.Widgets) size.Y = 250;
+            if (mode == HomeMode.LocalSend) size.Y += localSendStripHeight;
 
             return size;
         }
@@ -109,6 +112,10 @@ namespace DynamicWin.UI.Menu.Menus
         DWTextImageButton trayButton;
 
         Tray tray;
+        DWTextImageButton localSendButton;
+        LocalSendPanel localSendPanel;
+
+        const float localSendStripHeight = 70f;
 
         public override List<UIObject> InitializeMenu(IslandObject island)
         {
@@ -142,7 +149,7 @@ namespace DynamicWin.UI.Menu.Menus
 
             widgetButton = new DWTextImageButton(topContainer, Resources.Res.Widgets, "Widgets", new Vec2(75 / 2 + 5, 0), new Vec2(75, 20), () =>
             {
-                isWidgetMode = true;
+                mode = HomeMode.Widgets;
             },
             UIAlignment.MiddleLeft);
             widgetButton.Text.alignment = UIAlignment.MiddleLeft;
@@ -157,7 +164,7 @@ namespace DynamicWin.UI.Menu.Menus
 
             trayButton = new DWTextImageButton(topContainer, Resources.Res.Tray, "Tray", new Vec2(112.5f, 0), new Vec2(57.5f, 20), () =>
             {
-                isWidgetMode = false;
+                mode = HomeMode.Tray;
             },
             UIAlignment.MiddleLeft);
             trayButton.Text.alignment = UIAlignment.MiddleLeft;
@@ -169,6 +176,21 @@ namespace DynamicWin.UI.Menu.Menus
             trayButton.roundRadius = 25;
 
             bigMenuItems.Add(trayButton);
+
+            localSendButton = new DWTextImageButton(topContainer, Resources.Res.LocalSend, "LocalSend", new Vec2(190, 0), new Vec2(87.5f, 20), () =>
+            {
+                mode = HomeMode.LocalSend;
+            },
+            UIAlignment.MiddleLeft);
+            localSendButton.Text.alignment = UIAlignment.MiddleLeft;
+            localSendButton.Text.Anchor.X = 0;
+            localSendButton.Text.Position = new Vec2(28.5f, 0);
+            localSendButton.normalColor = Col.Transparent;
+            localSendButton.hoverColor = Col.Transparent;
+            localSendButton.clickColor = Theme.Primary.Override(a: 0.35f);
+            localSendButton.roundRadius = 25;
+
+            bigMenuItems.Add(localSendButton);
 
             var settingsButton = new DWImageButton(topContainer, Resources.Res.Settings, new Vec2(-20f, 0), new Vec2(20, 20), () =>
             {
@@ -189,6 +211,13 @@ namespace DynamicWin.UI.Menu.Menus
             };
             tray.SilentSetActive(false);
             bigMenuItems.Add(tray);
+
+            localSendPanel = new LocalSendPanel(island, tray, new Vec2(0, -topSpacing * 1.5f), Vec2.zero, UIAlignment.BottomCenter)
+            {
+                Anchor = new Vec2(0.5f, 1f)
+            };
+            localSendPanel.SilentSetActive(false);
+            bigMenuItems.Add(localSendPanel);
 
             // Get all widgets
 
@@ -297,13 +326,17 @@ namespace DynamicWin.UI.Menu.Menus
         float sCD = 35;
         float bCD = 50;
 
-        public bool isWidgetMode = true;
+        public HomeMode mode = HomeMode.Widgets;
 
         int cycle = 0;
 
         public override void Update()
         {
-            tray.Size = new Vec2(topContainer.Size.X, IslandSizeBig().Y - bCD - topSpacing - topContainer.Size.Y / 2);
+            bool isLocalSend = mode == HomeMode.LocalSend;
+
+            tray.Size = new Vec2(topContainer.Size.X, IslandSizeBig().Y - bCD - topSpacing - topContainer.Size.Y / 2 - (isLocalSend ? localSendStripHeight + 10f : 0f));
+            localSendPanel.Size = new Vec2(topContainer.Size.X, localSendStripHeight);
+            localSendPanel.LocalPosition = new Vec2(0, -topSpacing * 1.5f - tray.Size.Y - 10f);
 
             if(cycle % 32 == 0)
             {
@@ -319,20 +352,23 @@ namespace DynamicWin.UI.Menu.Menus
 
             // Enable / Disable big widgets / Tray
 
-            tray.SetActive(Runtime.MainIsland.IsHovering && !isWidgetMode);
-            bigWidgets.ForEach(x => x.SetActive(Runtime.MainIsland.IsHovering && isWidgetMode));
+            tray.SetActive(Runtime.MainIsland.IsHovering && mode != HomeMode.Widgets);
+            localSendPanel.SetActive(Runtime.MainIsland.IsHovering && isLocalSend);
+            bigWidgets.ForEach(x => x.SetActive(Runtime.MainIsland.IsHovering && mode == HomeMode.Widgets));
             bigMenuItems.ForEach(x =>
             {
-                if(!(x is Tray))
+                if(!(x is Tray) && !(x is LocalSendPanel))
                 {
                     x.SetActive(Runtime.MainIsland.IsHovering);
                 }
             });
 
-            widgetButton.normalColor = Col.Lerp(widgetButton.normalColor, isWidgetMode ? Col.White.Override(a: 0.075f) : Col.Transparent, 15f * Runtime.DeltaTime);
-            trayButton.normalColor = Col.Lerp(trayButton.normalColor, (!isWidgetMode) ? Col.White.Override(a: 0.075f) : Col.Transparent, 15f * Runtime.DeltaTime);
-            widgetButton.hoverColor = Col.Lerp(widgetButton.hoverColor, isWidgetMode ? Col.White.Override(a: 0.075f) : Col.Transparent, 15f * Runtime.DeltaTime);
-            trayButton.hoverColor = Col.Lerp(trayButton.hoverColor, (!isWidgetMode) ? Col.White.Override(a: 0.075f) : Col.Transparent, 15f * Runtime.DeltaTime);
+            widgetButton.normalColor = Col.Lerp(widgetButton.normalColor, mode == HomeMode.Widgets ? Col.White.Override(a: 0.075f) : Col.Transparent, 15f * Runtime.DeltaTime);
+            trayButton.normalColor = Col.Lerp(trayButton.normalColor, mode == HomeMode.Tray ? Col.White.Override(a: 0.075f) : Col.Transparent, 15f * Runtime.DeltaTime);
+            localSendButton.normalColor = Col.Lerp(localSendButton.normalColor, mode == HomeMode.LocalSend ? Col.White.Override(a: 0.075f) : Col.Transparent, 15f * Runtime.DeltaTime);
+            widgetButton.hoverColor = Col.Lerp(widgetButton.hoverColor, mode == HomeMode.Widgets ? Col.White.Override(a: 0.075f) : Col.Transparent, 15f * Runtime.DeltaTime);
+            trayButton.hoverColor = Col.Lerp(trayButton.hoverColor, mode == HomeMode.Tray ? Col.White.Override(a: 0.075f) : Col.Transparent, 15f * Runtime.DeltaTime);
+            localSendButton.hoverColor = Col.Lerp(localSendButton.hoverColor, mode == HomeMode.LocalSend ? Col.White.Override(a: 0.075f) : Col.Transparent, 15f * Runtime.DeltaTime);
 
             Runtime.MainIsland.LocalPosition.X = Mathf.Lerp(Runtime.MainIsland.LocalPosition.X,
                 songLocalPosXAddition, 2f * Runtime.DeltaTime);
